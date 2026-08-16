@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Reconhecimento Facial</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        video,
+        canvas {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        button {
+            margin: 10px 5px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #abrirCamera {
+            background-color: #333;
+            color: white;
+        }
+
+        #capturar {
+            background-color: #0066cc;
+            color: white;
+        }
+
+        #resultado {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+            text-align: left;
+        }
+
+        .sucesso {
+            color: green;
+        }
+
+        .erro {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Reconhecimento Facial</h1>
+
+    <video id="video" autoplay playsinline></video>
+
+    <canvas id="canvas"></canvas>
+
+    <div>
+        <button id="abrirCamera">
+            Abrir câmera
+        </button>
+
+        <button id="capturar">
+            Capturar e reconhecer
+        </button>
+    </div>
+
+    <div id="resultado">
+        Aguardando captura...
+    </div>
+
+    <script>
+
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const abrirCamera = document.getElementById("abrirCamera");
+        const capturar = document.getElementById("capturar");
+        const resultado = document.getElementById("resultado");
+
+        let stream = null;
+
+
+        // =========================
+        // ABRIR CÂMERA
+        // =========================
+
+        abrirCamera.addEventListener("click", async () => {
+
+            try {
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+
+                video.srcObject = stream;
+
+                resultado.innerHTML = "Câmera ativada. Posicione o rosto e clique em capturar.";
+
+            } catch (erro) {
+
+                console.error(erro);
+
+                resultado.innerHTML = `
+                    <p class="erro">
+                        Não foi possível acessar a câmera.
+                    </p>
+                `;
+            }
+
+        });
+
+
+        // =========================
+        // CAPTURAR E RECONHECER
+        // =========================
+
+        capturar.addEventListener("click", async () => {
+
+            if (!stream) {
+
+                resultado.innerHTML = `
+                    <p class="erro">
+                        Primeiro abra a câmera.
+                    </p>
+                `;
+
+                return;
+            }
+
+
+            // Definir tamanho da imagem
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+
+            // Capturar imagem da câmera
+
+            const contexto = canvas.getContext("2d");
+
+            contexto.drawImage(
+                video,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+
+            // Transformar canvas em arquivo
+
+            canvas.toBlob(async (blob) => {
+
+                if (!blob) {
+
+                    resultado.innerHTML = `
+                        <p class="erro">
+                            Não foi possível capturar a imagem.
+                        </p>
+                    `;
+
+                    return;
+                }
+
+
+                // Criar formulário
+
+                const formulario = new FormData();
+
+                formulario.append(
+                    "arquivo",
+                    blob,
+                    "captura.jpg"
+                );
+
+
+                resultado.innerHTML = "Reconhecendo rosto...";
+
+
+                try {
+
+                    // Enviar para a API
+
+                    const resposta = await fetch(
+                        "/reconhecimento",
+                        {
+                            method: "POST",
+                            body: formulario
+                        }
+                    );
+
+
+                    const dados = await resposta.json();
+
+
+                    // =========================
+                    // RESULTADO
+                    // =========================
+
+                    if (!resposta.ok) {
+
+                        resultado.innerHTML = `
+                            <p class="erro">
+                                ${dados.detail || "Erro ao realizar reconhecimento."}
+                            </p>
+                        `;
+
+                        return;
+                    }
+
+
+                    if (dados.reconhecido) {
+
+                        resultado.innerHTML = `
+                            <h3 class="sucesso">
+                                Pessoa reconhecida
+                            </h3>
+
+                            <p>
+                                <strong>Nome:</strong>
+                                ${dados.pessoa.nome}
+                            </p>
+
+                            <p>
+                                <strong>CPF:</strong>
+                                ${dados.pessoa.cpf}
+                            </p>
+
+                            <p>
+                                <strong>Distância:</strong>
+                                ${dados.distancia}
+                            </p>
+                        `;
+
+                    } else {
+
+                        resultado.innerHTML = `
+                            <h3 class="erro">
+                                Pessoa não reconhecida
+                            </h3>
+
+                            <p>
+                                <strong>Distância:</strong>
+                                ${dados.distancia}
+                            </p>
+                        `;
+
+                    }
+
+                } catch (erro) {
+
+                    console.error(erro);
+
+                    resultado.innerHTML = `
+                        <p class="erro">
+                            Erro ao comunicar com a API.
+                        </p>
+                    `;
+
+                }
+
+            }, "image/jpeg");
+
+        });
+
+    </script>
+
+</body>
+
+</html>

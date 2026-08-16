@@ -1,0 +1,24 @@
+# Ambiente virtual
+.venv/
+
+# Variáveis de ambiente e senhas
+.env
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+
+# Pytest
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Arquivos gerados pelo SchemaSpy
+output/
+
+# Imagens utilizadas nos testes
+tests/imagens/
