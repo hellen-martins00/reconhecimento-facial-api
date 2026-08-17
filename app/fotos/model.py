@@ -34,12 +34,18 @@ class Foto(Base):
     )
 
     pessoa_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("pessoas.id"),
+        ForeignKey(
+            "pessoas.id",
+            ondelete="CASCADE",
+        ),
         nullable=True
     )
 
     agente_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("agentes.id"),
+        ForeignKey(
+            "agentes.id",
+            ondelete="CASCADE"
+        ),
         nullable=True
     )
 

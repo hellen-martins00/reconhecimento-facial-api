@@ -22,7 +22,10 @@ class AgenteFacial(Base):
     )
 
     agente_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("agentes.id"),
+        ForeignKey(
+            "agentes.id",
+            ondelete="CASCADE"
+        ),
         nullable=False,
         unique=True
     )
