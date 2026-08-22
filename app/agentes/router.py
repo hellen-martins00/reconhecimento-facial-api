@@ -49,7 +49,7 @@ router = APIRouter(
 def criar_agente(
     dados: AgenteCreate,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = AgenteRepository(db)
@@ -93,7 +93,7 @@ def cadastrar_foto_facial(
     agente_id: UUID,
     arquivo: UploadFile = File(...),
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     foto_repository = FotoRepository(db)
@@ -114,6 +114,56 @@ def cadastrar_foto_facial(
     try:
 
         return service.criar_para_agente(
+            agente_id,
+            arquivo
+        )
+
+    except ValueError as erro:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )
+        
+@router.put(
+    "/{agente_id}/foto",
+    response_model=FotoResponse
+)
+def atualizar_foto_facial(
+    agente_id: UUID,
+    arquivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    # AGENTE só pode alterar a própria foto.
+    if (
+        agente_atual.perfil != "ADMIN"
+        and agente_atual.id != agente_id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Você só pode atualizar sua própria foto facial."
+        )
+
+    foto_repository = FotoRepository(db)
+
+    embedding_service = EmbeddingService()
+
+    embedding_repository = EmbeddingRepository(db)
+
+    agente_facial_repository = AgenteFacialRepository(db)
+
+    service = FotoService(
+        repository=foto_repository,
+        embedding_service=embedding_service,
+        embedding_repository=embedding_repository,
+        agente_facial_repository=agente_facial_repository
+    )
+
+    try:
+
+        return service.atualizar_foto_agente(
             agente_id,
             arquivo
         )

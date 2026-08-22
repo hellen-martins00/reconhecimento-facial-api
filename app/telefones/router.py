@@ -125,7 +125,7 @@ def atualizar_telefone(
     id: UUID,
     dados: TelefoneUpdate,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = TelefoneRepository(db)

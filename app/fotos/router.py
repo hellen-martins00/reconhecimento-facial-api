@@ -207,3 +207,40 @@ def deletar_foto(
             status_code=404,
             detail=str(erro)
         )
+        
+@router.put(
+    "/{id}",
+    response_model=FotoResponse
+)
+def atualizar_foto(
+    id: UUID,
+    arquivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    foto_repository = FotoRepository(db)
+
+    embedding_service = EmbeddingService()
+
+    embedding_repository = EmbeddingRepository(db)
+
+    service = FotoService(
+        repository=foto_repository,
+        embedding_service=embedding_service,
+        embedding_repository=embedding_repository
+    )
+
+    try:
+
+        return service.atualizar_foto_pessoa(
+            id,
+            arquivo
+        )
+
+    except ValueError as erro:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )

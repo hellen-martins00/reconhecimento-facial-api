@@ -24,7 +24,7 @@ router = APIRouter(
 def criar_pessoa(
     dados: PessoaCreate,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = PessoaRepository(db)
@@ -95,7 +95,7 @@ def atualizar_pessoa(
     id: str,
     dados: PessoaUpdate,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = PessoaRepository(db)

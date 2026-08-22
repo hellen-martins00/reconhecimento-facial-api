@@ -37,7 +37,7 @@ def criar_passagem(
     data_ocorrencia: date,
     delegacia: str,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = PassagemRepository(db)

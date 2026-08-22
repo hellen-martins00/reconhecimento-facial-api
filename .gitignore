@@ -22,3 +22,9 @@ output/
 
 # Imagens utilizadas nos testes
 tests/imagens/
+
+# Arquivo gerado pelo coverage
+.coverage
+
+# Configurações do ambiente de teste
+.env.test
