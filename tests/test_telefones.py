@@ -1,575 +1,207 @@
 from uuid import uuid4
 
-from app.agentes.model import Agente
-from app.auth.service import pwd_context
+import pytest
+
+from app.pessoas.model import Pessoa
+from app.telefones.model import Telefone
+from app.telefones.repository import TelefoneRepository
+from app.telefones.schema import TelefoneCreate, TelefoneUpdate
+from app.telefones.service import TelefoneService
 
 
-# ==========================================================
-# FUNÇÃO AUXILIAR - LOGIN DE AGENTE
-# ==========================================================
-
-def login_agente(client, db):
-
-    senha = "123456"
-
-    agente = Agente(
-        nome="Agente Telefone Teste",
-        usuario=f"agente_telefone_{uuid4()}",
-        senha_hash=pwd_context.hash(senha),
-        perfil="AGENTE"
+def criar_pessoa(db):
+    pessoa = Pessoa(
+        nome="Pessoa Teste",
+        cpf=str(uuid4())[:11],
+        data_nascimento="1990-01-01",
+        sexo="M",
+        nome_mae="Maria Teste",
+        nome_pai="João Teste"
     )
 
-    db.add(agente)
+    db.add(pessoa)
     db.commit()
-    db.refresh(agente)
+    db.refresh(pessoa)
 
-    response = client.post(
-        "/login",
-        json={
-            "usuario": agente.usuario,
-            "senha": senha
-        }
+    return pessoa
+
+
+def criar_telefone(db, pessoa_id):
+    telefone = Telefone(
+        pessoa_id=pessoa_id,
+        numero="61999999999",
+        tipo="celular"
     )
 
-    assert response.status_code == 200
-
-    token = response.json()["access_token"]
-
-    return token
-
-
-# ==========================================================
-# FUNÇÃO AUXILIAR - LOGIN DE ADMIN
-# ==========================================================
-
-def login_admin(client, db):
-
-    senha = "123456"
-
-    admin = Agente(
-        nome="Administrador Telefone Teste",
-        usuario=f"admin_telefone_{uuid4()}",
-        senha_hash=pwd_context.hash(senha),
-        perfil="ADMIN"
-    )
-
-    db.add(admin)
+    db.add(telefone)
     db.commit()
-    db.refresh(admin)
+    db.refresh(telefone)
 
-    response = client.post(
-        "/login",
-        json={
-            "usuario": admin.usuario,
-            "senha": senha
-        }
+    return telefone
+
+
+def criar_service(db):
+    return TelefoneService(
+        TelefoneRepository(db)
     )
 
-    assert response.status_code == 200
 
-    token = response.json()["access_token"]
+# CRIAR
+def test_criar_telefone(db):
+    pessoa = criar_pessoa(db)
+    service = criar_service(db)
 
-    return token
-
-
-# ==========================================================
-# CRIAR TELEFONE
-# ==========================================================
-
-def test_criar_telefone(client, db):
-
-    token = login_admin(client, db)
-
-    # ------------------------------------------------------
-    # Primeiro cria uma pessoa
-    # ------------------------------------------------------
-
-    pessoa = {
-        "nome": "Pessoa Teste Telefone",
-        "cpf": str(uuid4())[:11],
-        "data_nascimento": "1995-05-10",
-        "sexo": "M",
-        "nome_mae": "Maria Teste",
-        "nome_pai": "Joao Teste"
-    }
-
-    response_pessoa = client.post(
-        "/pessoas",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=pessoa
+    dados = TelefoneCreate(
+        pessoa_id=pessoa.id,
+        numero="61999999999",
+        tipo="celular"
     )
 
-    assert response_pessoa.status_code == 201
+    telefone = service.criar(dados)
 
-    pessoa_id = response_pessoa.json()["id"]
+    assert telefone.id is not None
+    assert telefone.pessoa_id == pessoa.id
+    assert telefone.numero == "61999999999"
+    assert telefone.tipo == "celular"
 
-    # ------------------------------------------------------
-    # Agora cria o telefone
-    # ------------------------------------------------------
 
-    telefone = {
-        "pessoa_id": pessoa_id,
-        "numero": "61999999999",
-        "tipo": "celular"
-    }
+def test_criar_telefone_pessoa_inexistente(db):
+    service = criar_service(db)
 
-    response = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=telefone
+    dados = TelefoneCreate(
+        pessoa_id=uuid4(),
+        numero="61999999999",
+        tipo="celular"
     )
 
-    assert response.status_code == 201
-
-    dados = response.json()
-
-    assert "id" in dados
-    assert dados["pessoa_id"] == pessoa_id
-    assert dados["numero"] == "61999999999"
-    assert dados["tipo"] == "celular"
+    with pytest.raises(ValueError, match="Pessoa não encontrada."):
+        service.criar(dados)
 
 
-# ==========================================================
-# CRIAR TELEFONE - PESSOA INEXISTENTE
-# ==========================================================
+# LISTAR
+def test_listar_telefones(db):
+    pessoa = criar_pessoa(db)
 
-def test_criar_telefone_pessoa_inexistente(client, db):
+    criar_telefone(db, pessoa.id)
+    criar_telefone(db, pessoa.id)
 
-    token = login_agente(client, db)
+    service = criar_service(db)
 
-    telefone = {
-        "pessoa_id": str(uuid4()),
-        "numero": "61999999999",
-        "tipo": "celular"
-    }
+    telefones = service.listar()
 
-    response = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=telefone
+    assert len(telefones) == 2
+
+
+# BUSCAR
+def test_buscar_telefone(db):
+    pessoa = criar_pessoa(db)
+    telefone = criar_telefone(db, pessoa.id)
+
+    service = criar_service(db)
+
+    resultado = service.buscar_por_id(telefone.id)
+
+    assert resultado.id == telefone.id
+    assert resultado.pessoa_id == pessoa.id
+    assert resultado.numero == "61999999999"
+
+
+def test_buscar_telefone_inexistente(db):
+    service = criar_service(db)
+
+    with pytest.raises(ValueError, match="Telefone não encontrado."):
+        service.buscar_por_id(uuid4())
+
+
+# LISTAR POR PESSOA
+def test_listar_telefones_por_pessoa(db):
+    pessoa = criar_pessoa(db)
+
+    criar_telefone(db, pessoa.id)
+    criar_telefone(db, pessoa.id)
+
+    service = criar_service(db)
+
+    telefones = service.listar_por_pessoa(pessoa.id)
+
+    assert len(telefones) == 2
+    assert all(
+        telefone.pessoa_id == pessoa.id
+        for telefone in telefones
     )
 
-    assert response.status_code == 400
 
-    assert response.json()["detail"] == "Pessoa não encontrada."
+def test_listar_telefones_pessoa_inexistente(db):
+    service = criar_service(db)
+
+    with pytest.raises(ValueError, match="Pessoa não encontrada."):
+        service.listar_por_pessoa(uuid4())
 
 
-# ==========================================================
-# LISTAR TELEFONES
-# ==========================================================
+# ATUALIZAR
+def test_atualizar_telefone(db):
+    pessoa = criar_pessoa(db)
+    telefone = criar_telefone(db, pessoa.id)
 
-def test_listar_telefones(client, db):
+    service = criar_service(db)
 
-    token = login_agente(client, db)
-
-    response = client.get(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
+    dados = TelefoneUpdate(
+        numero="61988888888",
+        tipo="residencial"
     )
 
-    assert response.status_code == 200
-
-    dados = response.json()
-
-    assert isinstance(dados, list)
-
-
-# ==========================================================
-# BUSCAR TELEFONE POR ID
-# ==========================================================
-
-def test_buscar_telefone(client, db):
-
-    token_admin = login_admin(client, db)
-
-    # ------------------------------------------------------
-    # Cria pessoa
-    # ------------------------------------------------------
-
-    pessoa = {
-        "nome": "Pessoa Busca Telefone",
-        "cpf": str(uuid4())[:11],
-        "data_nascimento": "1990-01-01",
-        "sexo": "M",
-        "nome_mae": "Maria Teste",
-        "nome_pai": "Joao Teste"
-    }
-
-    response_pessoa = client.post(
-        "/pessoas",
-        headers={
-            "Authorization": f"Bearer {token_admin}"
-        },
-        json=pessoa
+    resultado = service.atualizar(
+        telefone.id,
+        dados
     )
 
-    assert response_pessoa.status_code == 201
+    assert resultado.numero == "61988888888"
+    assert resultado.tipo == "residencial"
 
-    pessoa_id = response_pessoa.json()["id"]
 
-    # ------------------------------------------------------
-    # Cria telefone
-    # ------------------------------------------------------
+def test_atualizar_telefone_parcial(db):
+    pessoa = criar_pessoa(db)
+    telefone = criar_telefone(db, pessoa.id)
 
-    telefone = {
-        "pessoa_id": pessoa_id,
-        "numero": "61988888888",
-        "tipo": "celular"
-    }
+    service = criar_service(db)
 
-    response_telefone = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token_admin}"
-        },
-        json=telefone
+    dados = TelefoneUpdate(
+        numero="61988888888"
     )
 
-    assert response_telefone.status_code == 201
-
-    telefone_id = response_telefone.json()["id"]
-
-    # ------------------------------------------------------
-    # Busca
-    # ------------------------------------------------------
-
-    response = client.get(
-        f"/telefones/{telefone_id}",
-        headers={
-            "Authorization": f"Bearer {token_admin}"
-        }
+    resultado = service.atualizar(
+        telefone.id,
+        dados
     )
 
-    assert response.status_code == 200
+    assert resultado.numero == "61988888888"
+    assert resultado.tipo == "celular"
 
-    dados = response.json()
 
-    assert dados["id"] == telefone_id
-    assert dados["pessoa_id"] == pessoa_id
-    assert dados["numero"] == "61988888888"
-    assert dados["tipo"] == "celular"
+def test_atualizar_telefone_inexistente(db):
+    service = criar_service(db)
 
+    with pytest.raises(ValueError, match="Telefone não encontrado."):
+        service.atualizar(
+            uuid4(),
+            TelefoneUpdate(numero="61988888888")
+        )
 
-# ==========================================================
-# BUSCAR TELEFONE INEXISTENTE
-# ==========================================================
 
-def test_buscar_telefone_inexistente(client, db):
+# DELETAR
+def test_deletar_telefone(db):
+    pessoa = criar_pessoa(db)
+    telefone = criar_telefone(db, pessoa.id)
 
-    token = login_agente(client, db)
+    service = criar_service(db)
 
-    id_inexistente = str(uuid4())
+    service.deletar(telefone.id)
 
-    response = client.get(
-        f"/telefones/{id_inexistente}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
+    assert service.repository.buscar_por_id(telefone.id) is None
 
-    assert response.status_code == 404
 
-    assert response.json()["detail"] == "Telefone não encontrado."
+def test_deletar_telefone_inexistente(db):
+    service = criar_service(db)
 
-
-# ==========================================================
-# LISTAR TELEFONES POR PESSOA
-# ==========================================================
-
-def test_listar_telefones_por_pessoa(client, db):
-
-    token = login_admin(client, db)
-
-    # ------------------------------------------------------
-    # Cria pessoa
-    # ------------------------------------------------------
-
-    pessoa = {
-        "nome": "Pessoa Lista Telefones",
-        "cpf": str(uuid4())[:11],
-        "data_nascimento": "1992-02-02",
-        "sexo": "F",
-        "nome_mae": "Maria Teste",
-        "nome_pai": "Joao Teste"
-    }
-
-    response_pessoa = client.post(
-        "/pessoas",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=pessoa
-    )
-
-    assert response_pessoa.status_code == 201
-
-    pessoa_id = response_pessoa.json()["id"]
-
-    # ------------------------------------------------------
-    # Cria telefone
-    # ------------------------------------------------------
-
-    telefone = {
-        "pessoa_id": pessoa_id,
-        "numero": "61977777777",
-        "tipo": "celular"
-    }
-
-    response_telefone = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=telefone
-    )
-
-    assert response_telefone.status_code == 201
-
-    # ------------------------------------------------------
-    # Lista telefones da pessoa
-    # ------------------------------------------------------
-
-    response = client.get(
-        f"/telefones/pessoa/{pessoa_id}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
-
-    assert response.status_code == 200
-
-    dados = response.json()
-
-    assert isinstance(dados, list)
-    assert len(dados) >= 1
-    assert dados[0]["pessoa_id"] == pessoa_id
-
-
-# ==========================================================
-# LISTAR TELEFONES - PESSOA INEXISTENTE
-# ==========================================================
-
-def test_listar_telefones_pessoa_inexistente(client, db):
-
-    token = login_agente(client, db)
-
-    pessoa_id_inexistente = str(uuid4())
-
-    response = client.get(
-        f"/telefones/pessoa/{pessoa_id_inexistente}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
-
-    assert response.status_code == 404
-
-    assert response.json()["detail"] == "Pessoa não encontrada."
-
-
-# ==========================================================
-# ATUALIZAR TELEFONE
-# ==========================================================
-
-def test_atualizar_telefone(client, db):
-
-    token = login_admin(client, db)
-
-    # ------------------------------------------------------
-    # Cria pessoa
-    # ------------------------------------------------------
-
-    pessoa = {
-        "nome": "Pessoa Atualizar Telefone",
-        "cpf": str(uuid4())[:11],
-        "data_nascimento": "1991-03-03",
-        "sexo": "M",
-        "nome_mae": "Maria Teste",
-        "nome_pai": "Joao Teste"
-    }
-
-    response_pessoa = client.post(
-        "/pessoas",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=pessoa
-    )
-
-    assert response_pessoa.status_code == 201
-
-    pessoa_id = response_pessoa.json()["id"]
-
-    # ------------------------------------------------------
-    # Cria telefone
-    # ------------------------------------------------------
-
-    telefone = {
-        "pessoa_id": pessoa_id,
-        "numero": "61966666666",
-        "tipo": "celular"
-    }
-
-    response_telefone = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=telefone
-    )
-
-    assert response_telefone.status_code == 201
-
-    telefone_id = response_telefone.json()["id"]
-
-    # ------------------------------------------------------
-    # Atualiza
-    # ------------------------------------------------------
-
-    dados_atualizacao = {
-        "numero": "61955555555",
-        "tipo": "residencial"
-    }
-
-    response = client.put(
-        f"/telefones/{telefone_id}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=dados_atualizacao
-    )
-
-    assert response.status_code == 200
-
-    dados = response.json()
-
-    assert dados["id"] == telefone_id
-    assert dados["numero"] == "61955555555"
-    assert dados["tipo"] == "residencial"
-
-
-# ==========================================================
-# ATUALIZAR TELEFONE INEXISTENTE
-# ==========================================================
-
-def test_atualizar_telefone_inexistente(client, db):
-
-    token = login_admin(client, db)
-
-    id_inexistente = str(uuid4())
-
-    dados = {
-        "numero": "61944444444",
-        "tipo": "celular"
-    }
-
-    response = client.put(
-        f"/telefones/{id_inexistente}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=dados
-    )
-
-    assert response.status_code == 404
-
-    assert response.json()["detail"] == "Telefone não encontrado."
-
-
-# ==========================================================
-# EXCLUIR TELEFONE
-# ==========================================================
-
-def test_deletar_telefone(client, db):
-
-    token = login_admin(client, db)
-
-    # ------------------------------------------------------
-    # Cria pessoa
-    # ------------------------------------------------------
-
-    pessoa = {
-        "nome": "Pessoa Deletar Telefone",
-        "cpf": str(uuid4())[:11],
-        "data_nascimento": "1993-04-04",
-        "sexo": "M",
-        "nome_mae": "Maria Teste",
-        "nome_pai": "Joao Teste"
-    }
-
-    response_pessoa = client.post(
-        "/pessoas",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=pessoa
-    )
-
-    assert response_pessoa.status_code == 201
-
-    pessoa_id = response_pessoa.json()["id"]
-
-    # ------------------------------------------------------
-    # Cria telefone
-    # ------------------------------------------------------
-
-    telefone = {
-        "pessoa_id": pessoa_id,
-        "numero": "61933333333",
-        "tipo": "celular"
-    }
-
-    response_telefone = client.post(
-        "/telefones",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
-        json=telefone
-    )
-
-    assert response_telefone.status_code == 201
-
-    telefone_id = response_telefone.json()["id"]
-
-    # ------------------------------------------------------
-    # Deleta
-    # ------------------------------------------------------
-
-    response = client.delete(
-        f"/telefones/{telefone_id}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
-
-    assert response.status_code == 204
-
-
-# ==========================================================
-# DELETAR TELEFONE INEXISTENTE
-# ==========================================================
-
-def test_deletar_telefone_inexistente(client, db):
-
-    token = login_admin(client, db)
-
-    id_inexistente = str(uuid4())
-
-    response = client.delete(
-        f"/telefones/{id_inexistente}",
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
-
-    assert response.status_code == 404
-
-    assert response.json()["detail"] == "Telefone não encontrado."
+    with pytest.raises(ValueError, match="Telefone não encontrado."):
+        service.deletar(uuid4())
