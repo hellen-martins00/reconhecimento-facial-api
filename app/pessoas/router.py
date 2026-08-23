@@ -6,7 +6,7 @@ from app.agentes.model import Agente
 
 from app.dependencies import get_db
 from app.pessoas.repository import PessoaRepository
-from app.pessoas.schema import PessoaCreate, PessoaUpdate, PessoaResponse
+from app.pessoas.schema import PessoaCreate, PessoaUpdate, PessoaResponse, PessoaListaResponse
 from app.pessoas.service import PessoaService
 
 
@@ -47,7 +47,7 @@ def criar_pessoa(
 
 @router.get(
     "",
-    response_model=list[PessoaResponse]
+    response_model=list[PessoaListaResponse]
 )
 def listar_pessoas(
     db: Session = Depends(get_db),

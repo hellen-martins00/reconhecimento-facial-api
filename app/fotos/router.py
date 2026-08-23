@@ -244,3 +244,40 @@ def atualizar_foto(
             status_code=400,
             detail=str(erro)
         )
+        
+@router.get(
+    "/pessoa/{pessoa_id}/mais-recente/arquivo"
+)
+def carregar_foto_mais_recente(
+    pessoa_id: UUID,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    repository = FotoRepository(db)
+
+    foto = repository.buscar_mais_recente_por_pessoa(
+        pessoa_id
+    )
+
+    if not foto:
+        raise HTTPException(
+            status_code=404,
+            detail="Pessoa não possui foto."
+        )
+
+    nome = foto.nome_arquivo.lower()
+
+    if nome.endswith(".jpg") or nome.endswith(".jpeg"):
+        media_type = "image/jpeg"
+
+    elif nome.endswith(".png"):
+        media_type = "image/png"
+
+    else:
+        media_type = "application/octet-stream"
+
+    return Response(
+        content=foto.arquivo,
+        media_type=media_type
+    )

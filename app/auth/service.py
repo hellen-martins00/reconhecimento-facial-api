@@ -55,5 +55,6 @@ class AuthService:
             "token_type": "bearer",
             "id": agente.id,
             "nome": agente.nome,
-            "usuario": agente.usuario
+            "usuario": agente.usuario,
+            "perfil": agente.perfil
         }

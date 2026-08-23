@@ -47,3 +47,11 @@ class AgenteService:
     def listar(self):
 
         return self.repository.listar()
+    
+    def deletar(self, id):
+            agente = self.repository.buscar_por_id(id)
+            
+            if not agente:
+                raise ValueError("Agente não encontrada.")
+            
+            self.repository.deletar(agente)

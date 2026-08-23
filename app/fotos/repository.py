@@ -44,3 +44,15 @@ class FotoRepository:
     def deletar(self, foto: Foto):
         self.db.delete(foto)
         self.db.commit()
+        
+        
+    def buscar_mais_recente_por_pessoa(self, pessoa_id: UUID):
+        return (
+            self.db.query(Foto)
+            .filter(Foto.pessoa_id == pessoa_id)
+            .order_by(
+                Foto.data_upload.desc(),
+                Foto.id.desc()
+            )
+            .first()
+        )

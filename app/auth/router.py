@@ -32,9 +32,7 @@ router = APIRouter(
 )
 
 
-# ============================================================
 # LOGIN COM USUÁRIO E SENHA
-# ============================================================
 
 @router.post(
     "",
@@ -64,9 +62,7 @@ def login(
         )
 
 
-# ============================================================
 # LOGIN POR RECONHECIMENTO FACIAL
-# ============================================================
 
 @router.post(
     "/facial",
@@ -121,9 +117,7 @@ def login_facial(
             conteudo
         )
 
-        # ==========================================
         # NÃO RECONHECIDO
-        # ==========================================
 
         if not resultado["autenticado"]:
 
@@ -134,12 +128,11 @@ def login_facial(
                 "token_type": None,
                 "id": None,
                 "nome": None,
-                "usuario": None
+                "usuario": None,
+                "perfil": None
             }
 
-        # ==========================================
         # RECONHECIDO
-        # ==========================================
 
         agente = resultado["agente"]
 
@@ -150,7 +143,8 @@ def login_facial(
             "token_type": "bearer",
             "id": agente.id,
             "nome": agente.nome,
-            "usuario": agente.usuario
+            "usuario": agente.usuario,
+            "perfil": agente.perfil
         }
 
     except ValueError as erro:

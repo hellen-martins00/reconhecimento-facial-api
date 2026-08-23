@@ -56,3 +56,21 @@ class PessoaResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+class PessoaListaResponse(BaseModel):
+
+    id: UUID
+
+    nome: str
+
+    cpf: str
+
+    data_nascimento: date
+
+    sexo: str
+
+    nome_mae: str
+
+    nome_pai: str
+
+    foto_id: Optional[UUID] = None

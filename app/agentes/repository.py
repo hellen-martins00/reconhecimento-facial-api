@@ -37,3 +37,7 @@ class AgenteRepository:
     def listar(self):
 
         return self.db.query(Agente).all()
+    
+    def deletar(self, agente: Agente):
+            self.db.delete(agente)
+            self.db.commit()

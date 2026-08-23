@@ -174,3 +174,28 @@ def atualizar_foto_facial(
             status_code=400,
             detail=str(erro)
         )
+        
+@router.delete(
+    "/{id}",
+    status_code=204
+)
+def deletar_agente(
+    id: str,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_admin_atual)
+):
+
+    repository = AgenteRepository(db)
+
+    service = AgenteService(repository)
+
+    try:
+
+        service.deletar(id)
+
+    except ValueError as erro:
+
+        raise HTTPException(
+            status_code=404,
+            detail=str(erro)
+        )

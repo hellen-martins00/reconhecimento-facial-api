@@ -24,6 +24,7 @@ class LoginResponse(BaseModel):
 
     usuario: str
 
+    perfil: str
 
 class LoginFacialResponse(BaseModel):
 
@@ -40,3 +41,5 @@ class LoginFacialResponse(BaseModel):
     nome: Optional[str] = None
 
     usuario: Optional[str] = None
+    
+    perfil: Optional[str] = None
