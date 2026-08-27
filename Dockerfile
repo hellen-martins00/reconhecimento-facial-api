@@ -36,6 +36,4 @@ COPY . .
 
 EXPOSE 8000
 
-# No CMD instruction here: Railway's startCommand (configured in railway.json
-# or the service settings) controls how the container starts. A Dockerfile
-# CMD would otherwise take precedence over Railway's startCommand.
+ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
