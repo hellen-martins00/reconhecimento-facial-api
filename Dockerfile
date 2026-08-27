@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libxcb-render0 \
     libgomp1 \
+    libgl1 \
+    libglx0 \
+    libglvnd0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first to leverage Docker layer caching
