@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_agente_atual, get_admin_atual
 from app.agentes.model import Agente
-from app.agentes.repository import AgenteFacialRepository
+from app.agentes_faciais.repository import AgenteFacialRepository
+
 
 from app.dependencies import get_db
 
