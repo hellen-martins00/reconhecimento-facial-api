@@ -38,6 +38,13 @@ class AgenteRepository:
 
         return self.db.query(Agente).all()
     
+    def atualizar(self, agente: Agente):
+        self.db.commit()
+
+        self.db.refresh(agente)
+
+        return agente
+    
     def deletar(self, agente: Agente):
             self.db.delete(agente)
             self.db.commit()

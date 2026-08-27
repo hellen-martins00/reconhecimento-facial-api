@@ -40,6 +40,17 @@ class FotoRepository:
             .filter(Foto.agente_id == agente_id)
             .all()
         )    
+        
+    def buscar_mais_recente_por_agente(self, agente_id: UUID):
+        return (
+            self.db.query(Foto)
+            .filter(Foto.agente_id == agente_id)
+            .order_by(
+                Foto.data_upload.desc(),
+                Foto.id.desc()
+            )
+            .first()
+    )
 
     def deletar(self, foto: Foto):
         self.db.delete(foto)

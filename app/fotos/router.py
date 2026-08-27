@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_agente_atual, get_admin_atual
 from app.agentes.model import Agente
+from app.agentes.repository import AgenteFacialRepository
 
 from app.dependencies import get_db
 
@@ -281,3 +282,80 @@ def carregar_foto_mais_recente(
         content=foto.arquivo,
         media_type=media_type
     )
+    
+@router.post(
+    "/agente/{agente_id}",
+    response_model=FotoResponse,
+    status_code=201
+)
+def criar_foto_agente(
+    agente_id: UUID,
+    arquivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    foto_repository = FotoRepository(db)
+
+    agente_facial_repository = (
+        AgenteFacialRepository(db)
+    )
+
+    service = FotoService(
+        repository=foto_repository,
+        embedding_service=EmbeddingService(),
+        embedding_repository=EmbeddingRepository(db),
+        agente_facial_repository=agente_facial_repository
+    )
+
+    try:
+
+        return service.criar_para_agente(
+            agente_id,
+            arquivo
+        )
+
+    except ValueError as erro:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )
+        
+@router.put(
+    "/agente/{agente_id}",
+    response_model=FotoResponse
+)
+def atualizar_foto_agente(
+    agente_id: UUID,
+    arquivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    foto_repository = FotoRepository(db)
+
+    agente_facial_repository = (
+        AgenteFacialRepository(db)
+    )
+
+    service = FotoService(
+        repository=foto_repository,
+        embedding_service=EmbeddingService(),
+        embedding_repository=EmbeddingRepository(db),
+        agente_facial_repository=agente_facial_repository
+    )
+
+    try:
+
+        return service.atualizar_foto_agente(
+            agente_id,
+            arquivo
+        )
+
+    except ValueError as erro:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )

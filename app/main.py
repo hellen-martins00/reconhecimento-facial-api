@@ -1,8 +1,5 @@
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 
 from app.pessoas.model import Pessoa
 from app.telefones.model import Telefone
@@ -48,11 +45,3 @@ app.include_router(reconhecimento_router)
 app.include_router(passagem_router)
 app.include_router(agente_router)
 app.include_router(auth_router)
-
-
-@app.get("/", include_in_schema=False)
-def pagina_inicial():
-
-    caminho = Path("frontend/index.html")
-
-    return FileResponse(caminho)
