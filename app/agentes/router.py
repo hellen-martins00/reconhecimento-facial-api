@@ -296,11 +296,9 @@ def carregar_foto_agente(
         agente_id
     )
 
+    # AGENTE NÃO POSSUI FOTO
     if not foto:
-        raise HTTPException(
-            status_code=404,
-            detail="Agente não possui foto."
-        )
+        return Response(status_code=204)
 
     nome = foto.nome_arquivo.lower()
 
