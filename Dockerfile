@@ -16,13 +16,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-6 \
     libxext6 \
     libxrender-dev \
-    libglib2.0-0 \
-    libsm6 \
     libxcb-render0 \
-    libgomp1 \
     libgl1 \
     libglx0 \
     libglvnd0 \
+    libglib2.0-0 \
+    libsm6 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first to leverage Docker layer caching
@@ -33,14 +33,6 @@ RUN pip install --upgrade pip && \
 # Copy the rest of the application code
 COPY . .
 
-# .env files, if present, are copied along with the app code above and are
-# read at runtime via python-dotenv (see app/config.py). No virtualenv is
-# used inside the container since dependencies are installed system-wide.
-
 EXPOSE 8000
 
-# No CMD instruction here: Railway's startCommand (configured in railway.json
-# or the service settings) controls how the container starts. A Dockerfile
-# CMD would otherwise take precedence over Railway's startCommand.
-
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
