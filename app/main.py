@@ -20,9 +20,25 @@ from app.agentes.router import router as agente_router
 from app.auth.router import router as auth_router
 
 
+from contextlib import asynccontextmanager
+from deepface import DeepFace
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Carrega o modelo na memória assim que o servidor liga no Railway
+    print("Pre-carregando modelos faciais...")
+    try:
+        DeepFace.build_model("Facenet")
+        # Força o download do detector RetinaFace no boot
+        DeepFace.extract_faces(img_path="https://raw.githubusercontent.com/serengil/deepface/master/tests/dataset/img1.jpg", detector_backend="retinaface")
+    except Exception as e:
+        print(f"Aviso no carregamento dos modelos: {e}")
+    yield
+
 app = FastAPI(
     title="API de Reconhecimento Facial",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 
