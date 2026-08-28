@@ -1,3 +1,5 @@
+import numpy as np
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,6 +24,7 @@ from app.auth.router import router as auth_router
 
 from contextlib import asynccontextmanager
 from deepface import DeepFace
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
