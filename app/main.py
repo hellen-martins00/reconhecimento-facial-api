@@ -25,12 +25,20 @@ from deepface import DeepFace
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Carrega o modelo na memória assim que o servidor liga no Railway
     print("Pre-carregando modelos faciais...")
     try:
+        # Carrega o modelo de embeddings (Facenet)
         DeepFace.build_model("Facenet")
-        # Força o download do detector RetinaFace no boot
-        DeepFace.extract_faces(img_path="https://raw.githubusercontent.com/serengil/deepface/master/tests/dataset/img1.jpg", detector_backend="retinaface")
+        
+        # Cria uma imagem fictícia preta (100x100 pixels) para forçar o RetinaFace a carregar na memória no boot
+        dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        DeepFace.represent(
+            img_path=dummy_img,
+            model_name="Facenet",
+            detector_backend="retinaface",
+            enforce_detection=False
+        )
+        print("Modelos carregados com sucesso!")
     except Exception as e:
         print(f"Aviso no carregamento dos modelos: {e}")
     yield
