@@ -18,6 +18,8 @@ from app.dependencies import get_db
 from app.embeddings.repository import EmbeddingRepository
 from app.reconhecimento.schema import ReconhecimentoResponse
 from app.reconhecimento.service import ReconhecimentoService
+from app.reconhecimento.model import Reconhecimento
+from app.reconhecimento.repository import ReconhecimentoRepository
 
 
 router = APIRouter(
@@ -54,7 +56,6 @@ def reconhecer_rosto(
             )
         )
 
-    # Ler a imagem diretamente para memória
     conteudo = arquivo.file.read()
 
     if not conteudo:
@@ -75,6 +76,29 @@ def reconhecer_rosto(
         resultado = service.reconhecer(
             conteudo
         )
+
+        # SALVAR HISTÓRICO
+
+        reconhecimento_repository = (
+            ReconhecimentoRepository(db)
+        )
+
+        novo_reconhecimento = Reconhecimento(
+            pessoa_id=(
+                resultado["pessoa"].id
+                if resultado["pessoa"]
+                else None
+            ),
+            agente_id=agente_atual.id,
+            reconhecido=resultado["reconhecido"],
+            distancia=resultado["distancia"]
+        )
+
+        reconhecimento_repository.criar(
+            novo_reconhecimento
+        )
+
+        # PREPARAR RESPOSTA
 
         pessoa = resultado["pessoa"]
         foto = resultado["foto"]
@@ -103,3 +127,18 @@ def reconhecer_rosto(
             status_code=400,
             detail=str(erro)
         )
+
+
+@router.get("/total")
+def total_reconhecimentos(
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    repository = ReconhecimentoRepository(db)
+
+    total = repository.contar_total()
+
+    return {
+        "total": total
+    }
