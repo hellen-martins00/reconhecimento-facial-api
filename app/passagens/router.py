@@ -33,9 +33,7 @@ router = APIRouter(
 def criar_passagem(
     pessoa_id: UUID,
     crime: str,
-    descricao: str,
     data_ocorrencia: date,
-    delegacia: str,
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
 ):
@@ -51,9 +49,7 @@ def criar_passagem(
         return service.criar(
             pessoa_id=pessoa_id,
             crime=crime,
-            descricao=descricao,
             data_ocorrencia=data_ocorrencia,
-            delegacia=delegacia
         )
 
     except ValueError as erro:

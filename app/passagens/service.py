@@ -17,9 +17,7 @@ class PassagemService:
         self,
         pessoa_id: uuid.UUID,
         crime: str,
-        descricao: str,
-        data_ocorrencia,
-        delegacia: str
+        data_ocorrencia
     ):
 
         pessoa = (
@@ -36,9 +34,7 @@ class PassagemService:
         passagem = PassagemCriminal(
             pessoa_id=pessoa_id,
             crime=crime,
-            descricao=descricao,
-            data_ocorrencia=data_ocorrencia,
-            delegacia=delegacia
+            data_ocorrencia=data_ocorrencia
         )
 
         return self.repository.salvar(passagem)

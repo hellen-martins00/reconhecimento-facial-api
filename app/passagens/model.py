@@ -28,18 +28,8 @@ class PassagemCriminal(Base):
         nullable=False
     )
 
-    descricao: Mapped[str] = mapped_column(
-        String(500),
-        nullable=False
-    )
-
     data_ocorrencia: Mapped[date] = mapped_column(
         Date,
-        nullable=False
-    )
-
-    delegacia: Mapped[str] = mapped_column(
-        String(150),
         nullable=False
     )
 

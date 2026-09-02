@@ -9,9 +9,7 @@ class PassagemCriminalResponse(BaseModel):
     id: UUID
     pessoa_id: UUID
     crime: str
-    descricao: str
     data_ocorrencia: date
-    delegacia: str
     created_at: datetime
     updated_at: datetime
 
