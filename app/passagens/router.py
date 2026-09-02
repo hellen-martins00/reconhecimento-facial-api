@@ -15,7 +15,7 @@ from app.agentes.model import Agente
 from app.dependencies import get_db
 
 from app.passagens.repository import PassagemRepository
-from app.passagens.schema import PassagemCriminalResponse
+from app.passagens.schema import PassagemCriminalCreate, PassagemCriminalResponse
 from app.passagens.service import PassagemService
 
 
