@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from app.passagens.model import PassagemCriminal
 from app.passagens.repository import PassagemRepository
@@ -17,7 +18,7 @@ class PassagemService:
         self,
         pessoa_id: uuid.UUID,
         crime: str,
-        data_ocorrencia
+        data_ocorrencia: date
     ):
 
         pessoa = (

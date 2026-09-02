@@ -31,25 +31,21 @@ router = APIRouter(
     status_code=201
 )
 def criar_passagem(
-    pessoa_id: UUID,
-    crime: str,
-    data_ocorrencia: date,
+    dados: PassagemCriminalCreate,
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = PassagemRepository(db)
 
-    service = PassagemService(
-        repository
-    )
+    service = PassagemService(repository)
 
     try:
 
         return service.criar(
-            pessoa_id=pessoa_id,
-            crime=crime,
-            data_ocorrencia=data_ocorrencia,
+            pessoa_id=dados.pessoa_id,
+            crime=dados.crime,
+            data_ocorrencia=dados.data_ocorrencia
         )
 
     except ValueError as erro:

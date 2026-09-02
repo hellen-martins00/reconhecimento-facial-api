@@ -4,6 +4,13 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class PassagemCriminalCreate(BaseModel):
+
+    pessoa_id: UUID
+    crime: str
+    data_ocorrencia: date
+    
+
 class PassagemCriminalResponse(BaseModel):
 
     id: UUID
