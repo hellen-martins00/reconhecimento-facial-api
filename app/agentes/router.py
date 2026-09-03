@@ -78,7 +78,7 @@ def criar_agente(
 )
 def listar_agentes(
     db: Session = Depends(get_db),
-    #agente_atual: Agente = Depends(get_agente_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = AgenteRepository(db)
