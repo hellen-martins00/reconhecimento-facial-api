@@ -142,7 +142,7 @@ def atualizar_endereco(
 def deletar_endereco(
     id: UUID,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = EnderecoRepository(db)
