@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -6,7 +8,12 @@ from app.agentes.model import Agente
 
 from app.dependencies import get_db
 from app.pessoas.repository import PessoaRepository
-from app.pessoas.schema import PessoaCreate, PessoaUpdate, PessoaResponse, PessoaListaResponse
+from app.pessoas.schema import (
+    PessoaCreate,
+    PessoaUpdate,
+    PessoaResponse,
+    PessoaListaResponse
+)
 from app.pessoas.service import PessoaService
 
 
@@ -15,6 +22,8 @@ router = APIRouter(
     tags=["Pessoas"]
 )
 
+
+# CRIAR PESSOA
 
 @router.post(
     "",
@@ -40,10 +49,12 @@ def criar_pessoa(
     except ValueError as erro:
 
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail=str(erro)
         )
 
+
+# LISTAR PESSOAS
 
 @router.get(
     "",
@@ -61,12 +72,14 @@ def listar_pessoas(
     return service.listar()
 
 
+# BUSCAR PESSOA
+
 @router.get(
     "/{id}",
     response_model=PessoaResponse
 )
 def buscar_pessoa(
-    id: str,
+    id: UUID,
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
 ):
@@ -87,12 +100,14 @@ def buscar_pessoa(
     return pessoa
 
 
+# ATUALIZAR PESSOA
+
 @router.put(
     "/{id}",
     response_model=PessoaResponse
 )
 def atualizar_pessoa(
-    id: str,
+    id: UUID,
     dados: PessoaUpdate,
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
@@ -108,18 +123,29 @@ def atualizar_pessoa(
 
     except ValueError as erro:
 
+        mensagem = str(erro)
+
+        if mensagem == "Pessoa não encontrada.":
+
+            raise HTTPException(
+                status_code=404,
+                detail=mensagem
+            )
+
         raise HTTPException(
-            status_code=400,
-            detail=str(erro)
+            status_code=409,
+            detail=mensagem
         )
 
+
+# DELETAR PESSOA
 
 @router.delete(
     "/{id}",
     status_code=204
 )
 def deletar_pessoa(
-    id: str,
+    id: UUID,
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_admin_atual)
 ):

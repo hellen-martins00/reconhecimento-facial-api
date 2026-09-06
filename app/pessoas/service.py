@@ -1,11 +1,16 @@
+from uuid import UUID
+
 from app.pessoas.model import Pessoa
 from app.pessoas.repository import PessoaRepository
 from app.pessoas.schema import PessoaCreate, PessoaUpdate
+
 
 class PessoaService:
 
     def __init__(self, repository: PessoaRepository):
         self.repository = repository
+
+    # CRIAR PESSOA
 
     def criar(self, dados: PessoaCreate):
 
@@ -29,10 +34,12 @@ class PessoaService:
 
         return self.repository.salvar(pessoa)
 
+    # LISTAR PESSOAS
+
     def listar(self):
-        
+
         resultados = self.repository.listar()
-        
+
         return [
             {
                 "id": pessoa.id,
@@ -45,12 +52,21 @@ class PessoaService:
                 "foto_id": foto_id
             }
             for pessoa, foto_id in resultados
-    ]
+        ]
 
-    def buscar_por_id(self, id):
+    # BUSCAR PESSOA POR ID
+
+    def buscar_por_id(self, id: UUID):
+
         return self.repository.buscar_por_id(id)
 
-    def atualizar(self, id, dados: PessoaUpdate):
+    # ATUALIZAR PESSOA
+
+    def atualizar(
+        self,
+        id: UUID,
+        dados: PessoaUpdate
+    ):
 
         pessoa = self.repository.buscar_por_id(id)
 
@@ -64,12 +80,14 @@ class PessoaService:
 
         if dados.cpf is not None:
 
-            existente = self.repository.buscar_por_cpf(
+            pessoa_existente = self.repository.buscar_por_cpf(
                 dados.cpf
             )
 
-            if existente and existente.id != pessoa.id:
-
+            if (
+                pessoa_existente
+                and pessoa_existente.id != pessoa.id
+            ):
                 raise ValueError(
                     "Já existe uma pessoa cadastrada "
                     "com este CPF."
@@ -91,7 +109,9 @@ class PessoaService:
 
         return self.repository.atualizar(pessoa)
 
-    def deletar(self, id):
+    # DELETAR PESSOA
+
+    def deletar(self, id: UUID):
 
         pessoa = self.repository.buscar_por_id(id)
 

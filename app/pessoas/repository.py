@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -10,25 +12,47 @@ class PessoaRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    # SALVAR PESSOA
+
     def salvar(self, pessoa: Pessoa):
-        self.db.add(pessoa)
-        self.db.commit()
-        self.db.refresh(pessoa)
-        return pessoa
+
+        try:
+
+            self.db.add(pessoa)
+
+            self.db.commit()
+
+            self.db.refresh(pessoa)
+
+            return pessoa
+
+        except Exception:
+
+            self.db.rollback()
+
+            raise
+
+    # BUSCAR POR CPF
 
     def buscar_por_cpf(self, cpf: str):
+
         return (
             self.db.query(Pessoa)
             .filter(Pessoa.cpf == cpf)
             .first()
         )
 
-    def buscar_por_id(self, id):
+    # BUSCAR POR ID
+
+    def buscar_por_id(self, id: UUID):
+
         return (
             self.db.query(Pessoa)
             .filter(Pessoa.id == id)
             .first()
         )
+
+    # LISTAR PESSOAS
 
     def listar(self):
 
@@ -57,17 +81,46 @@ class PessoaRepository:
             )
             .outerjoin(
                 fotos_ranqueadas,
-                (fotos_ranqueadas.c.pessoa_id == Pessoa.id)
-                & (fotos_ranqueadas.c.numero == 1)
+                (
+                    fotos_ranqueadas.c.pessoa_id == Pessoa.id
+                )
+                & (
+                    fotos_ranqueadas.c.numero == 1
+                )
             )
             .all()
         )
 
+    # ATUALIZAR PESSOA
+
     def atualizar(self, pessoa: Pessoa):
-        self.db.commit()
-        self.db.refresh(pessoa)
-        return pessoa
+
+        try:
+
+            self.db.commit()
+
+            self.db.refresh(pessoa)
+
+            return pessoa
+
+        except Exception:
+
+            self.db.rollback()
+
+            raise
+
+    # DELETAR PESSOA
 
     def deletar(self, pessoa: Pessoa):
-        self.db.delete(pessoa)
-        self.db.commit()
+
+        try:
+
+            self.db.delete(pessoa)
+
+            self.db.commit()
+
+        except Exception:
+
+            self.db.rollback()
+
+            raise
