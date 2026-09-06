@@ -34,6 +34,38 @@ class PassagemCriminalCreate(BaseModel):
         return valor
 
 
+class PassagemCriminalUpdate(BaseModel):
+
+    crime: str | None = None
+    data_ocorrencia: date | None = None
+
+    @field_validator("crime")
+    @classmethod
+    def validar_crime(cls, valor):
+
+        if valor is None:
+            return valor
+
+        valor = valor.strip()
+
+        if not valor:
+            raise ValueError(
+                "O crime é obrigatório."
+            )
+
+        if len(valor) < 3:
+            raise ValueError(
+                "O crime deve ter pelo menos 3 caracteres."
+            )
+
+        if len(valor) > 150:
+            raise ValueError(
+                "O crime deve ter no máximo 150 caracteres."
+            )
+
+        return valor
+
+
 class PassagemCriminalResponse(BaseModel):
 
     id: UUID

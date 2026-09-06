@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.passagens.model import PassagemCriminal
 from app.passagens.repository import PassagemRepository
+from app.passagens.schema import PassagemCriminalUpdate
 
 
 class PassagemService:
@@ -66,6 +67,27 @@ class PassagemService:
         return self.repository.listar_por_pessoa(
             pessoa_id
         )
+        
+    def atualizar(
+        self,
+        id: UUID,
+        dados: PassagemCriminalUpdate
+    ):
+
+        passagem = self.repository.buscar_por_id(id)
+        
+        if not passagem:
+            raise ValueError(
+                "Passagem criminal não encontrada."
+            )
+
+        if dados.crime is not None:
+            passagem.crime = dados.crime
+
+        if dados.data_ocorrencia is not None:
+            passagem.data_ocorrencia = dados.data_ocorrencia
+
+        return self.repository.atualizar(passagem)
 
     def deletar(self, id: UUID):
 

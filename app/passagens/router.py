@@ -13,7 +13,8 @@ from app.dependencies import get_db
 from app.passagens.repository import PassagemRepository
 from app.passagens.schema import (
     PassagemCriminalCreate,
-    PassagemCriminalResponse
+    PassagemCriminalResponse,
+    PassagemCriminalUpdate
 )
 from app.passagens.service import PassagemService
 
@@ -117,6 +118,34 @@ def buscar_passagem(
             status_code=404,
             detail=str(erro)
         )
+        
+
+@router.put(
+    "/{id}",
+    response_model=PassagemCriminalResponse
+)
+def atualizar_passagem(
+    id: UUID,
+    dados: PassagemCriminalUpdate,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    repository = PassagemRepository(db)
+
+    service = PassagemService(repository)
+
+    try:
+        return service.atualizar(
+            id=id,
+            dados=dados
+        )
+
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=404,
+            detail=str(erro)
+        )
 
 
 @router.delete(
@@ -126,7 +155,7 @@ def buscar_passagem(
 def deletar_passagem(
     id: UUID,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = PassagemRepository(db)

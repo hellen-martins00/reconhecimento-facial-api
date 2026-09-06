@@ -56,6 +56,17 @@ class PassagemRepository:
             .filter(Pessoa.id == pessoa_id)
             .first()
         )
+        
+    def atualizar(self, passagem: PassagemCriminal):
+        try:
+            self.db.commit()
+            self.db.refresh(passagem)
+
+            return passagem
+
+        except Exception:
+            self.db.rollback()
+            raise
 
     def deletar(self, passagem: PassagemCriminal):
 
