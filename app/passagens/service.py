@@ -1,9 +1,8 @@
-import uuid
 from datetime import date
+from uuid import UUID
 
 from app.passagens.model import PassagemCriminal
 from app.passagens.repository import PassagemRepository
-from app.pessoas.model import Pessoa
 
 
 class PassagemService:
@@ -16,15 +15,13 @@ class PassagemService:
 
     def criar(
         self,
-        pessoa_id: uuid.UUID,
+        pessoa_id: UUID,
         crime: str,
         data_ocorrencia: date
     ):
 
-        pessoa = (
-            self.repository.db.query(Pessoa)
-            .filter(Pessoa.id == pessoa_id)
-            .first()
+        pessoa = self.repository.buscar_pessoa_por_id(
+            pessoa_id
         )
 
         if not pessoa:
@@ -44,7 +41,7 @@ class PassagemService:
 
         return self.repository.listar()
 
-    def buscar_por_id(self, id):
+    def buscar_por_id(self, id: UUID):
 
         passagem = self.repository.buscar_por_id(id)
 
@@ -55,13 +52,22 @@ class PassagemService:
 
         return passagem
 
-    def listar_por_pessoa(self, pessoa_id):
+    def listar_por_pessoa(self, pessoa_id: UUID):
+
+        pessoa = self.repository.buscar_pessoa_por_id(
+            pessoa_id
+        )
+
+        if not pessoa:
+            raise ValueError(
+                "Pessoa não encontrada."
+            )
 
         return self.repository.listar_por_pessoa(
             pessoa_id
         )
 
-    def deletar(self, id):
+    def deletar(self, id: UUID):
 
         passagem = self.repository.buscar_por_id(id)
 

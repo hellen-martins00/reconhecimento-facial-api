@@ -1,14 +1,16 @@
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Date, DateTime, ForeignKey
+from sqlalchemy import Date, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+
 if TYPE_CHECKING:
     from app.pessoas.model import Pessoa
+
 
 class PassagemCriminal(Base):
     __tablename__ = "passagens_criminais"
@@ -35,15 +37,17 @@ class PassagemCriminal(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        nullable=False
     )
-    
+
     pessoa: Mapped["Pessoa"] = relationship(
         back_populates="passagens_criminais"
     )

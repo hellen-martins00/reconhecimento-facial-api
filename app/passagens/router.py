@@ -1,4 +1,3 @@
-from datetime import date
 from uuid import UUID
 
 from fastapi import (
@@ -6,16 +5,16 @@ from fastapi import (
     Depends,
     HTTPException
 )
-
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_agente_atual, get_admin_atual
 from app.agentes.model import Agente
-
+from app.auth.dependencies import get_admin_atual, get_agente_atual
 from app.dependencies import get_db
-
 from app.passagens.repository import PassagemRepository
-from app.passagens.schema import PassagemCriminalCreate, PassagemCriminalResponse
+from app.passagens.schema import (
+    PassagemCriminalCreate,
+    PassagemCriminalResponse
+)
 from app.passagens.service import PassagemService
 
 
@@ -41,7 +40,6 @@ def criar_passagem(
     service = PassagemService(repository)
 
     try:
-
         return service.criar(
             pessoa_id=dados.pessoa_id,
             crime=dados.crime,
@@ -49,9 +47,8 @@ def criar_passagem(
         )
 
     except ValueError as erro:
-
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail=str(erro)
         )
 
@@ -67,39 +64,9 @@ def listar_passagens(
 
     repository = PassagemRepository(db)
 
-    service = PassagemService(
-        repository
-    )
+    service = PassagemService(repository)
 
     return service.listar()
-
-
-@router.get(
-    "/{id}",
-    response_model=PassagemCriminalResponse
-)
-def buscar_passagem(
-    id: UUID,
-    db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_agente_atual)
-):
-
-    repository = PassagemRepository(db)
-
-    service = PassagemService(
-        repository
-    )
-
-    try:
-
-        return service.buscar_por_id(id)
-
-    except ValueError as erro:
-
-        raise HTTPException(
-            status_code=404,
-            detail=str(erro)
-        )
 
 
 @router.get(
@@ -114,13 +81,42 @@ def listar_passagens_por_pessoa(
 
     repository = PassagemRepository(db)
 
-    service = PassagemService(
-        repository
-    )
+    service = PassagemService(repository)
 
-    return service.listar_por_pessoa(
-        pessoa_id
-    )
+    try:
+        return service.listar_por_pessoa(
+            pessoa_id
+        )
+
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=404,
+            detail=str(erro)
+        )
+
+
+@router.get(
+    "/{id}",
+    response_model=PassagemCriminalResponse
+)
+def buscar_passagem(
+    id: UUID,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    repository = PassagemRepository(db)
+
+    service = PassagemService(repository)
+
+    try:
+        return service.buscar_por_id(id)
+
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=404,
+            detail=str(erro)
+        )
 
 
 @router.delete(
@@ -135,16 +131,12 @@ def deletar_passagem(
 
     repository = PassagemRepository(db)
 
-    service = PassagemService(
-        repository
-    )
+    service = PassagemService(repository)
 
     try:
-
         service.deletar(id)
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=404,
             detail=str(erro)

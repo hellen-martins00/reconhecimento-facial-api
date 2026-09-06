@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.passagens.model import PassagemCriminal
+from app.pessoas.model import Pessoa
 
 
 class PassagemRepository:
@@ -12,11 +13,16 @@ class PassagemRepository:
 
     def salvar(self, passagem: PassagemCriminal):
 
-        self.db.add(passagem)
-        self.db.commit()
-        self.db.refresh(passagem)
+        try:
+            self.db.add(passagem)
+            self.db.commit()
+            self.db.refresh(passagem)
 
-        return passagem
+            return passagem
+
+        except Exception:
+            self.db.rollback()
+            raise
 
     def buscar_por_id(self, id: UUID):
 
@@ -43,7 +49,20 @@ class PassagemRepository:
             .all()
         )
 
+    def buscar_pessoa_por_id(self, pessoa_id: UUID):
+
+        return (
+            self.db.query(Pessoa)
+            .filter(Pessoa.id == pessoa_id)
+            .first()
+        )
+
     def deletar(self, passagem: PassagemCriminal):
 
-        self.db.delete(passagem)
-        self.db.commit()
+        try:
+            self.db.delete(passagem)
+            self.db.commit()
+
+        except Exception:
+            self.db.rollback()
+            raise
