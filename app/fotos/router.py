@@ -12,10 +12,9 @@ from fastapi.responses import Response
 
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_agente_atual, get_admin_atual
+from app.auth.dependencies import get_agente_atual
 from app.agentes.model import Agente
 from app.agentes_faciais.repository import AgenteFacialRepository
-
 
 from app.dependencies import get_db
 
@@ -32,6 +31,10 @@ router = APIRouter(
     tags=["Fotos"]
 )
 
+
+# ============================================================
+# CRIAR FOTO DE UMA PESSOA
+# ============================================================
 
 @router.post(
     "",
@@ -72,6 +75,10 @@ def criar_foto(
         )
 
 
+# ============================================================
+# LISTAR TODAS AS FOTOS
+# ============================================================
+
 @router.get(
     "",
     response_model=list[FotoResponse]
@@ -90,6 +97,11 @@ def listar_fotos(
     )
 
     return service.listar()
+
+
+# ============================================================
+# CARREGAR ARQUIVO DE UMA FOTO
+# ============================================================
 
 @router.get(
     "/{id}/arquivo"
@@ -130,6 +142,11 @@ def carregar_foto(
         media_type=media_type
     )
 
+
+# ============================================================
+# BUSCAR FOTO POR ID
+# ============================================================
+
 @router.get(
     "/{id}",
     response_model=FotoResponse
@@ -160,6 +177,10 @@ def buscar_foto(
         )
 
 
+# ============================================================
+# LISTAR FOTOS DE UMA PESSOA
+# ============================================================
+
 @router.get(
     "/pessoa/{pessoa_id}",
     response_model=list[FotoResponse]
@@ -181,6 +202,10 @@ def listar_fotos_por_pessoa(
     return service.listar_por_pessoa(pessoa_id)
 
 
+# ============================================================
+# EXCLUIR FOTO DE UMA PESSOA
+# ============================================================
+
 @router.delete(
     "/{id}",
     status_code=204
@@ -188,7 +213,7 @@ def listar_fotos_por_pessoa(
 def deletar_foto(
     id: UUID,
     db: Session = Depends(get_db),
-    agente_atual: Agente = Depends(get_admin_atual)
+    agente_atual: Agente = Depends(get_agente_atual)
 ):
 
     repository = FotoRepository(db)
@@ -209,7 +234,12 @@ def deletar_foto(
             status_code=404,
             detail=str(erro)
         )
-        
+
+
+# ============================================================
+# ATUALIZAR FOTO DE UMA PESSOA
+# ============================================================
+
 @router.put(
     "/{id}",
     response_model=FotoResponse
@@ -246,7 +276,12 @@ def atualizar_foto(
             status_code=400,
             detail=str(erro)
         )
-        
+
+
+# ============================================================
+# CARREGAR FOTO MAIS RECENTE DE UMA PESSOA
+# ============================================================
+
 @router.get(
     "/pessoa/{pessoa_id}/mais-recente/arquivo"
 )
@@ -263,6 +298,7 @@ def carregar_foto_mais_recente(
     )
 
     if not foto:
+
         raise HTTPException(
             status_code=404,
             detail="Pessoa não possui foto."
@@ -271,19 +307,33 @@ def carregar_foto_mais_recente(
     nome = foto.nome_arquivo.lower()
 
     if nome.endswith(".jpg") or nome.endswith(".jpeg"):
+
         media_type = "image/jpeg"
 
     elif nome.endswith(".png"):
+
         media_type = "image/png"
 
     else:
+
         media_type = "application/octet-stream"
 
     return Response(
         content=foto.arquivo,
         media_type=media_type
     )
-    
+
+
+# ============================================================
+# CRIAR FOTO FACIAL DE UM AGENTE
+#
+# AGENTE:
+#   - Pode cadastrar a própria foto.
+#
+# ADMIN:
+#   - Pode cadastrar a foto de qualquer agente.
+# ============================================================
+
 @router.post(
     "/agente/{agente_id}",
     response_model=FotoResponse,
@@ -296,11 +346,20 @@ def criar_foto_agente(
     agente_atual: Agente = Depends(get_agente_atual)
 ):
 
+    # Agente comum só pode cadastrar a própria foto.
+    if (
+        agente_atual.perfil != "ADMIN"
+        and agente_atual.id != agente_id
+    ):
+
+        raise HTTPException(
+            status_code=403,
+            detail="Você não possui permissão para cadastrar a foto deste agente."
+        )
+
     foto_repository = FotoRepository(db)
 
-    agente_facial_repository = (
-        AgenteFacialRepository(db)
-    )
+    agente_facial_repository = AgenteFacialRepository(db)
 
     service = FotoService(
         repository=foto_repository,
@@ -322,7 +381,18 @@ def criar_foto_agente(
             status_code=400,
             detail=str(erro)
         )
-        
+
+
+# ============================================================
+# ATUALIZAR FOTO FACIAL DE UM AGENTE
+#
+# AGENTE:
+#   - Pode atualizar a própria foto.
+#
+# ADMIN:
+#   - Pode atualizar a foto de qualquer agente.
+# ============================================================
+
 @router.put(
     "/agente/{agente_id}",
     response_model=FotoResponse
@@ -334,11 +404,20 @@ def atualizar_foto_agente(
     agente_atual: Agente = Depends(get_agente_atual)
 ):
 
+    # Agente comum só pode atualizar a própria foto.
+    if (
+        agente_atual.perfil != "ADMIN"
+        and agente_atual.id != agente_id
+    ):
+
+        raise HTTPException(
+            status_code=403,
+            detail="Você não possui permissão para atualizar a foto deste agente."
+        )
+
     foto_repository = FotoRepository(db)
 
-    agente_facial_repository = (
-        AgenteFacialRepository(db)
-    )
+    agente_facial_repository = AgenteFacialRepository(db)
 
     service = FotoService(
         repository=foto_repository,
