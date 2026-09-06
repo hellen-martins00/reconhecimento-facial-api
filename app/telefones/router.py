@@ -44,7 +44,7 @@ def criar_telefone(
     except ValueError as erro:
 
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail=str(erro)
         )
 

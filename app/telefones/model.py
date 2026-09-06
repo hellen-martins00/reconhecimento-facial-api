@@ -7,11 +7,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+
 if TYPE_CHECKING:
     from app.pessoas.model import Pessoa
 
+
 class Telefone(Base):
+
     __tablename__ = "telefones"
+
+    # IDENTIFICAÇÃO
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
@@ -23,6 +28,8 @@ class Telefone(Base):
         nullable=False
     )
 
+    # DADOS DO TELEFONE
+
     numero: Mapped[str] = mapped_column(
         String(20),
         nullable=False
@@ -33,16 +40,22 @@ class Telefone(Base):
         nullable=False
     )
 
+    # CONTROLE
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        nullable=False
     )
+
+    # RELACIONAMENTO
 
     pessoa: Mapped["Pessoa"] = relationship(
         back_populates="telefones"

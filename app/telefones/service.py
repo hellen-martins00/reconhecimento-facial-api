@@ -1,22 +1,17 @@
 from uuid import UUID
 
-from app.pessoas.model import Pessoa
 from app.telefones.model import Telefone
 from app.telefones.repository import TelefoneRepository
 from app.telefones.schema import TelefoneCreate, TelefoneUpdate
 
 
 class TelefoneService:
-
     def __init__(self, repository: TelefoneRepository):
         self.repository = repository
 
     def criar(self, dados: TelefoneCreate):
-
-        pessoa = (
-            self.repository.db.query(Pessoa)
-            .filter(Pessoa.id == dados.pessoa_id)
-            .first()
+        pessoa = self.repository.buscar_pessoa_por_id(
+            dados.pessoa_id
         )
 
         if not pessoa:
@@ -34,7 +29,6 @@ class TelefoneService:
         return self.repository.listar()
 
     def buscar_por_id(self, id: UUID):
-
         telefone = self.repository.buscar_por_id(id)
 
         if not telefone:
@@ -43,11 +37,8 @@ class TelefoneService:
         return telefone
 
     def listar_por_pessoa(self, pessoa_id: UUID):
-
-        pessoa = (
-            self.repository.db.query(Pessoa)
-            .filter(Pessoa.id == pessoa_id)
-            .first()
+        pessoa = self.repository.buscar_pessoa_por_id(
+            pessoa_id
         )
 
         if not pessoa:
@@ -56,7 +47,6 @@ class TelefoneService:
         return self.repository.buscar_por_pessoa(pessoa_id)
 
     def atualizar(self, id: UUID, dados: TelefoneUpdate):
-
         telefone = self.repository.buscar_por_id(id)
 
         if not telefone:
@@ -71,7 +61,6 @@ class TelefoneService:
         return self.repository.atualizar(telefone)
 
     def deletar(self, id: UUID):
-
         telefone = self.repository.buscar_por_id(id)
 
         if not telefone:
