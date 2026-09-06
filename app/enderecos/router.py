@@ -3,16 +3,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_agente_atual, get_admin_atual
 from app.agentes.model import Agente
-
-
+from app.auth.dependencies import get_admin_atual, get_agente_atual
 from app.dependencies import get_db
 from app.enderecos.repository import EnderecoRepository
 from app.enderecos.schema import (
     EnderecoCreate,
-    EnderecoUpdate,
-    EnderecoResponse
+    EnderecoResponse,
+    EnderecoUpdate
 )
 from app.enderecos.service import EnderecoService
 
@@ -39,13 +37,11 @@ def criar_endereco(
     service = EnderecoService(repository)
 
     try:
-
         return service.criar(dados)
 
     except ValueError as erro:
-
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail=str(erro)
         )
 
@@ -81,11 +77,9 @@ def buscar_endereco(
     service = EnderecoService(repository)
 
     try:
-
         return service.buscar_por_id(id)
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=404,
             detail=str(erro)
@@ -107,11 +101,9 @@ def listar_enderecos_por_pessoa(
     service = EnderecoService(repository)
 
     try:
-
         return service.listar_por_pessoa(pessoa_id)
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=404,
             detail=str(erro)
@@ -134,11 +126,9 @@ def atualizar_endereco(
     service = EnderecoService(repository)
 
     try:
-
         return service.atualizar(id, dados)
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=404,
             detail=str(erro)
@@ -160,11 +150,9 @@ def deletar_endereco(
     service = EnderecoService(repository)
 
     try:
-
         service.deletar(id)
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=404,
             detail=str(erro)

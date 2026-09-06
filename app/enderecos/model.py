@@ -3,13 +3,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, ForeignKey, DateTime
-
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-    
+
 from app.database import Base
 
 if TYPE_CHECKING:
     from app.pessoas.model import Pessoa
+
 
 class Endereco(Base):
     __tablename__ = "enderecos"
@@ -56,15 +56,17 @@ class Endereco(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        nullable=False
     )
-    
+
     pessoa: Mapped["Pessoa"] = relationship(
         back_populates="enderecos"
-)
+    )

@@ -3,7 +3,6 @@ from uuid import UUID
 from app.enderecos.model import Endereco
 from app.enderecos.repository import EnderecoRepository
 from app.enderecos.schema import EnderecoCreate, EnderecoUpdate
-from app.pessoas.model import Pessoa
 
 
 class EnderecoService:
@@ -13,10 +12,8 @@ class EnderecoService:
 
     def criar(self, dados: EnderecoCreate):
 
-        pessoa = (
-            self.repository.db.query(Pessoa)
-            .filter(Pessoa.id == dados.pessoa_id)
-            .first()
+        pessoa = self.repository.buscar_pessoa_por_id(
+            dados.pessoa_id
         )
 
         if not pessoa:
@@ -48,10 +45,8 @@ class EnderecoService:
 
     def listar_por_pessoa(self, pessoa_id: UUID):
 
-        pessoa = (
-            self.repository.db.query(Pessoa)
-            .filter(Pessoa.id == pessoa_id)
-            .first()
+        pessoa = self.repository.buscar_pessoa_por_id(
+            pessoa_id
         )
 
         if not pessoa:

@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.enderecos.model import Endereco
+from app.pessoas.model import Pessoa
 
 
 class EnderecoRepository:
@@ -11,11 +12,16 @@ class EnderecoRepository:
         self.db = db
 
     def salvar(self, endereco: Endereco):
-        self.db.add(endereco)
-        self.db.commit()
-        self.db.refresh(endereco)
+        try:
+            self.db.add(endereco)
+            self.db.commit()
+            self.db.refresh(endereco)
 
-        return endereco
+            return endereco
+
+        except Exception:
+            self.db.rollback()
+            raise
 
     def buscar_por_id(self, id: UUID):
         return (
@@ -34,12 +40,29 @@ class EnderecoRepository:
             .all()
         )
 
-    def atualizar(self, endereco: Endereco):
-        self.db.commit()
-        self.db.refresh(endereco)
+    def buscar_pessoa_por_id(self, pessoa_id: UUID):
+        return (
+            self.db.query(Pessoa)
+            .filter(Pessoa.id == pessoa_id)
+            .first()
+        )
 
-        return endereco
+    def atualizar(self, endereco: Endereco):
+        try:
+            self.db.commit()
+            self.db.refresh(endereco)
+
+            return endereco
+
+        except Exception:
+            self.db.rollback()
+            raise
 
     def deletar(self, endereco: Endereco):
-        self.db.delete(endereco)
-        self.db.commit()
+        try:
+            self.db.delete(endereco)
+            self.db.commit()
+
+        except Exception:
+            self.db.rollback()
+            raise
