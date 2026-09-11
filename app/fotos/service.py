@@ -25,6 +25,45 @@ class FotoService:
         self.embedding_service = embedding_service
         self.embedding_repository = embedding_repository
         self.agente_facial_repository = agente_facial_repository
+        
+    
+    def _verificar_foto_duplicada(
+        self,
+        vetor: list[float],
+        pessoa_id_atual: uuid.UUID
+    ):
+        resultado = (
+            self.embedding_repository
+            .buscar_mais_semelhante(vetor)
+        )
+
+        if not resultado:
+            return
+
+        embedding_existente, distancia = resultado
+
+        # Distância menor ou igual ao limite
+        # significa que o rosto é muito semelhante.
+        if distancia <= 0.5:
+
+            foto_existente = (
+                self.repository.buscar_por_id(
+                    embedding_existente.foto_id
+                )
+            )
+
+            if not foto_existente:
+                return
+
+            # Se pertence a outra pessoa, bloquear.
+            if (
+                foto_existente.pessoa_id
+                and foto_existente.pessoa_id != pessoa_id_atual
+            ):
+                raise ValueError(
+                    "Esta foto facial já está cadastrada "
+                    "para outra pessoa."
+                )
 
     # CRIAR FOTO DE UMA PESSOA
     def criar(
@@ -92,6 +131,12 @@ class FotoService:
             vetor = (
                 self.embedding_service
                 .gerar_embedding(conteudo)
+            )
+            
+            # Verificar se o rosto já pertence a outra pessoa
+            self._verificar_foto_duplicada(
+                vetor,
+                pessoa_id
             )
 
             # Salvar embedding
@@ -430,8 +475,14 @@ class FotoService:
                 self.embedding_service
                 .gerar_embedding(conteudo)
             )
+            
+            # 7. Verificar se o rosto já pertence a outra pessoa
+            self._verificar_foto_duplicada(
+                vetor,
+                foto.pessoa_id
+            )
 
-            # 7. Atualizar os dados da foto
+            # 8. Atualizar os dados da foto
             foto.nome_arquivo = (
                 f"{uuid.uuid4()}{extensao}"
             )
