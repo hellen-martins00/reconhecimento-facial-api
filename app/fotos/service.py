@@ -25,13 +25,15 @@ class FotoService:
         self.embedding_service = embedding_service
         self.embedding_repository = embedding_repository
         self.agente_facial_repository = agente_facial_repository
-        
-    
+
+    # VERIFICAR FOTO DUPLICADA DE PESSOA
+
     def _verificar_foto_duplicada(
         self,
         vetor: list[float],
         pessoa_id_atual: uuid.UUID
     ):
+
         resultado = (
             self.embedding_repository
             .buscar_mais_semelhante(vetor)
@@ -65,7 +67,38 @@ class FotoService:
                     "para outra pessoa."
                 )
 
+    # VERIFICAR FOTO DUPLICADA DE AGENTE
+
+    def _verificar_foto_agente_duplicada(
+        self,
+        vetor: list[float],
+        agente_id_atual: uuid.UUID | None = None
+    ):
+
+        resultado = (
+            self.agente_facial_repository
+            .buscar_mais_semelhante(
+                vetor,
+                agente_id_excluir=agente_id_atual
+            )
+        )
+
+        if not resultado:
+            return
+
+        agente_facial_existente, distancia = resultado
+
+        # Distância menor ou igual a 0.5
+        # indica que o rosto é muito semelhante.
+        if distancia <= 0.5:
+
+            raise ValueError(
+                "Esta foto facial já está cadastrada "
+                "para outro agente."
+            )
+
     # CRIAR FOTO DE UMA PESSOA
+
     def criar(
         self,
         pessoa_id: uuid.UUID,
@@ -132,7 +165,7 @@ class FotoService:
                 self.embedding_service
                 .gerar_embedding(conteudo)
             )
-            
+
             # Verificar se o rosto já pertence a outra pessoa
             self._verificar_foto_duplicada(
                 vetor,
@@ -157,6 +190,7 @@ class FotoService:
             raise
 
     # CRIAR FOTO FACIAL DE UM AGENTE
+
     def criar_para_agente(
         self,
         agente_id: uuid.UUID,
@@ -217,6 +251,18 @@ class FotoService:
 
         try:
 
+            # Gerar embedding antes de salvar
+            vetor = (
+                self.embedding_service
+                .gerar_embedding(conteudo)
+            )
+
+            # Verificar se o rosto já pertence
+            # a outro agente
+            self._verificar_foto_agente_duplicada(
+                vetor
+            )
+
             # Criar foto do agente
             foto = Foto(
                 agente_id=agente_id,
@@ -226,12 +272,6 @@ class FotoService:
 
             foto = self.repository.salvar(
                 foto
-            )
-
-            # Gerar embedding facial
-            vetor = (
-                self.embedding_service
-                .gerar_embedding(conteudo)
             )
 
             # Criar cadastro facial
@@ -256,6 +296,7 @@ class FotoService:
             raise
 
     # ATUALIZAR FOTO FACIAL DO AGENTE
+
     def atualizar_foto_agente(
         self,
         agente_id: uuid.UUID,
@@ -318,6 +359,16 @@ class FotoService:
                 .gerar_embedding(conteudo)
             )
 
+            # Verificar se o rosto pertence
+            # a outro agente.
+            #
+            # O próprio agente é ignorado para permitir
+            # que ele mantenha ou recadastre seu próprio rosto.
+            self._verificar_foto_agente_duplicada(
+                vetor,
+                agente_id_atual=agente_id
+            )
+
             # Localizar foto atual do agente
             foto = (
                 self.repository.db.query(Foto)
@@ -359,11 +410,13 @@ class FotoService:
             raise
 
     # LISTAR FOTOS
+
     def listar(self):
 
         return self.repository.listar()
 
     # BUSCAR FOTO POR ID
+
     def buscar_por_id(
         self,
         id
@@ -381,6 +434,7 @@ class FotoService:
         return foto
 
     # LISTAR FOTOS DE UMA PESSOA
+
     def listar_por_pessoa(
         self,
         pessoa_id
@@ -391,6 +445,7 @@ class FotoService:
         )
 
     # DELETAR FOTO
+
     def deletar(
         self,
         id
@@ -408,7 +463,9 @@ class FotoService:
         self.repository.deletar(
             foto
         )
-        
+
+    # ATUALIZAR FOTO DE UMA PESSOA
+
     def atualizar_foto_pessoa(
         self,
         foto_id: uuid.UUID,
@@ -475,7 +532,7 @@ class FotoService:
                 self.embedding_service
                 .gerar_embedding(conteudo)
             )
-            
+
             # 7. Verificar se o rosto já pertence a outra pessoa
             self._verificar_foto_duplicada(
                 vetor,
@@ -489,7 +546,7 @@ class FotoService:
 
             foto.arquivo = conteudo
 
-            # 8. Buscar o embedding atual da foto
+            # 9. Buscar o embedding atual da foto
             embedding = (
                 self.embedding_repository
                 .buscar_por_foto_id(foto_id)
@@ -500,13 +557,13 @@ class FotoService:
                     "Embedding facial da foto não encontrado."
                 )
 
-            # 9. Atualizar o embedding
+            # 10. Atualizar o embedding
             embedding.vetor = vetor
 
-            # 10. Confirmar alterações
+            # 11. Confirmar alterações
             self.repository.db.commit()
 
-            # 11. Atualizar objeto
+            # 12. Atualizar objeto
             self.repository.db.refresh(foto)
 
             return foto

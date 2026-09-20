@@ -36,15 +36,29 @@ class AgenteFacialRepository:
             .first()
         )
 
-    def buscar_mais_semelhante(self, vetor):
+    def buscar_mais_semelhante(
+        self,
+        vetor,
+        agente_id_excluir=None
+    ):
+
+        consulta = self.db.query(
+            AgenteFacial,
+            AgenteFacial.vetor.cosine_distance(vetor).label(
+                "distancia"
+            )
+        )
+
+        # Durante a edição, não compara o agente
+        # com o próprio rosto.
+        if agente_id_excluir:
+
+            consulta = consulta.filter(
+                AgenteFacial.agente_id != agente_id_excluir
+            )
 
         resultado = (
-            self.db.query(
-                AgenteFacial,
-                AgenteFacial.vetor.cosine_distance(vetor).label(
-                    "distancia"
-                )
-            )
+            consulta
             .order_by(
                 AgenteFacial.vetor.cosine_distance(vetor)
             )
