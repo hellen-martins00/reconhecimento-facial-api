@@ -33,6 +33,14 @@ class PessoaService:
         )
 
         return self.repository.salvar(pessoa)
+    
+    # VERIFICAR DISPONIBILIDADE DO CPF
+    
+    def cpf_disponivel(self, cpf: str):
+
+        pessoa_existente = self.repository.buscar_por_cpf(cpf)
+
+        return pessoa_existente is None
 
     # LISTAR PESSOAS
 

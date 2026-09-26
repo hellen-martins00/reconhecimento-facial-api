@@ -52,6 +52,28 @@ def criar_pessoa(
             status_code=409,
             detail=str(erro)
         )
+        
+
+# VERIFICAR CPF
+
+@router.get(
+    "/verificar-cpf/{cpf}"
+)
+def verificar_cpf(
+    cpf: str,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual)
+):
+
+    repository = PessoaRepository(db)
+
+    service = PessoaService(repository)
+
+    disponivel = service.cpf_disponivel(cpf)
+
+    return {
+        "disponivel": disponivel
+    }
 
 
 # LISTAR PESSOAS
