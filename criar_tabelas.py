@@ -6,7 +6,7 @@ from app.telefones.model import Telefone
 from app.enderecos.model import Endereco
 from app.fotos.model import Foto
 from app.embeddings.model import EmbeddingFacial
-from app.passagens.model import PassagemCriminal
+from app.desaparecimentos.model import RegistroDesaparecimento
 from app.agentes.model import Agente
 from app.agentes_faciais.model import AgenteFacial
 
