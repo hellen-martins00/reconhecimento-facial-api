@@ -22,6 +22,7 @@ class RegistroDesaparecimentoService:
         data_desaparecimento: date,
         local_desaparecimento: str,
         descricao: str,
+        status: str = "DESAPARECIDO",
     ):
         pessoa = self.repository.buscar_pessoa_por_id(pessoa_id)
 
@@ -33,6 +34,7 @@ class RegistroDesaparecimentoService:
             data_desaparecimento=data_desaparecimento,
             local_desaparecimento=local_desaparecimento,
             descricao=descricao,
+            status=status,
         )
 
         return self.repository.salvar(registro)

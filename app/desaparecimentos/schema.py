@@ -1,7 +1,11 @@
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
+
+
+StatusDesaparecimento = Literal["DESAPARECIDO", "LOCALIZADO"]
 
 
 class RegistroDesaparecimentoCreate(BaseModel):
@@ -9,6 +13,7 @@ class RegistroDesaparecimentoCreate(BaseModel):
     data_desaparecimento: date
     local_desaparecimento: str
     descricao: str
+    status: StatusDesaparecimento = "DESAPARECIDO"
 
     @field_validator("data_desaparecimento")
     @classmethod
@@ -24,14 +29,9 @@ class RegistroDesaparecimentoCreate(BaseModel):
     def validar_local(cls, valor: str):
         valor = valor.strip()
 
-        if len(valor) < 3:
+        if not 3 <= len(valor) <= 200:
             raise ValueError(
-                "O local deve ter pelo menos 3 caracteres."
-            )
-
-        if len(valor) > 200:
-            raise ValueError(
-                "O local deve ter no máximo 200 caracteres."
+                "O local deve ter entre 3 e 200 caracteres."
             )
 
         return valor
@@ -41,14 +41,9 @@ class RegistroDesaparecimentoCreate(BaseModel):
     def validar_descricao(cls, valor: str):
         valor = valor.strip()
 
-        if len(valor) < 3:
+        if not 3 <= len(valor) <= 500:
             raise ValueError(
-                "A descrição deve ter pelo menos 3 caracteres."
-            )
-
-        if len(valor) > 500:
-            raise ValueError(
-                "A descrição deve ter no máximo 500 caracteres."
+                "A descrição deve ter entre 3 e 500 caracteres."
             )
 
         return valor
@@ -58,6 +53,7 @@ class RegistroDesaparecimentoUpdate(BaseModel):
     data_desaparecimento: date | None = None
     local_desaparecimento: str | None = None
     descricao: str | None = None
+    status: StatusDesaparecimento | None = None
 
     @field_validator("data_desaparecimento")
     @classmethod
@@ -105,6 +101,7 @@ class RegistroDesaparecimentoResponse(BaseModel):
     data_desaparecimento: date
     local_desaparecimento: str
     descricao: str
+    status: StatusDesaparecimento
     created_at: datetime
     updated_at: datetime
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -51,6 +51,13 @@ class RegistroDesaparecimento(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+    
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="DESAPARECIDO",
+        server_default=text("'DESAPARECIDO'"),
     )
 
     pessoa: Mapped["Pessoa"] = relationship(

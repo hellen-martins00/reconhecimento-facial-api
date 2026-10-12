@@ -48,6 +48,7 @@ def criar_registro(
             data_desaparecimento=dados.data_desaparecimento,
             local_desaparecimento=dados.local_desaparecimento,
             descricao=dados.descricao,
+            status=dados.status,
         )
     except ValueError as erro:
         raise HTTPException(
