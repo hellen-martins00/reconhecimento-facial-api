@@ -1,11 +1,14 @@
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.agentes.model import Agente
 from app.auth.dependencies import get_agente_atual
 from app.dependencies import get_db
+from app.desaparecimentos.model import RegistroDesaparecimento
 from app.desaparecimentos.repository import (
     RegistroDesaparecimentoRepository,
 )
@@ -66,6 +69,36 @@ def listar_registros(
     agente_atual: Agente = Depends(get_agente_atual),
 ):
     return obter_service(db).listar()
+
+
+@router.get("/estatisticas")
+def obter_estatisticas(
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual),
+):
+    estatisticas = db.query(
+        func.count(
+            case(
+                (
+                    RegistroDesaparecimento.status == "DESAPARECIDO",
+                    1,
+                )
+            )
+        ).label("casos_em_aberto"),
+        func.count(
+            case(
+                (
+                    RegistroDesaparecimento.status == "LOCALIZADO",
+                    1,
+                )
+            )
+        ).label("pessoas_localizadas"),
+    ).one()
+
+    return {
+        "casos_em_aberto": estatisticas.casos_em_aberto,
+        "pessoas_localizadas": estatisticas.pessoas_localizadas,
+    }
 
 
 @router.get(
