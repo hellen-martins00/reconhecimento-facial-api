@@ -91,7 +91,8 @@ class Pessoa(Base):
         cascade="all, delete-orphan"
     )
 
-    passagens_criminais: Mapped[list["PassagemCriminal"]] = relationship(
+    registros_desaparecimento = relationship(
+        "RegistroDesaparecimento",
         back_populates="pessoa",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
