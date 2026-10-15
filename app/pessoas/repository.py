@@ -34,7 +34,12 @@ class PessoaRepository:
 
     # BUSCAR POR CPF
 
-    def buscar_por_cpf(self, cpf: str):
+    # BUSCAR POR CPF
+
+    def buscar_por_cpf(self, cpf: str | None):
+
+        if cpf is None:
+            return None
 
         return (
             self.db.query(Pessoa)

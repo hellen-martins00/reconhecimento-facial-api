@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from app.telefones.model import Telefone
     from app.enderecos.model import Endereco
     from app.fotos.model import Foto
-    from app.passagens.model import PassagemCriminal
 
 
 class Pessoa(Base):
@@ -33,30 +32,20 @@ class Pessoa(Base):
         nullable=False
     )
 
-    cpf: Mapped[str] = mapped_column(
+    cpf: Mapped[str | None] = mapped_column(
         String(11),
         unique=True,
-        nullable=False
+        nullable=True
     )
 
-    data_nascimento: Mapped[date] = mapped_column(
+    data_nascimento: Mapped[date | None] = mapped_column(
         Date,
-        nullable=False
+        nullable=True
     )
 
-    sexo: Mapped[str] = mapped_column(
+    sexo: Mapped[str | None] = mapped_column(
         String(1),
-        nullable=False
-    )
-
-    nome_mae: Mapped[str] = mapped_column(
-        String(150),
-        nullable=False
-    )
-
-    nome_pai: Mapped[str] = mapped_column(
-        String(150),
-        nullable=False
+        nullable=True
     )
 
     # CONTROLE
@@ -94,5 +83,5 @@ class Pessoa(Base):
     registros_desaparecimento = relationship(
         "RegistroDesaparecimento",
         back_populates="pessoa",
-        cascade="all, delete-orphan",
+        cascade="all, delete-orphan"
     )

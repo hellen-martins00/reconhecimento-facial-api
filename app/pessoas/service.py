@@ -14,28 +14,28 @@ class PessoaService:
 
     def criar(self, dados: PessoaCreate):
 
-        pessoa_existente = self.repository.buscar_por_cpf(
-            dados.cpf
-        )
-
-        if pessoa_existente:
-            raise ValueError(
-                "Já existe uma pessoa cadastrada com este CPF."
+        # Verifica duplicidade somente se o CPF foi informado
+        if dados.cpf is not None:
+            pessoa_existente = self.repository.buscar_por_cpf(
+                dados.cpf
             )
+
+            if pessoa_existente:
+                raise ValueError(
+                    "Já existe uma pessoa cadastrada com este CPF."
+                )
 
         pessoa = Pessoa(
             nome=dados.nome,
             cpf=dados.cpf,
             data_nascimento=dados.data_nascimento,
-            sexo=dados.sexo,
-            nome_mae=dados.nome_mae,
-            nome_pai=dados.nome_pai
+            sexo=dados.sexo
         )
 
         return self.repository.salvar(pessoa)
-    
+
     # VERIFICAR DISPONIBILIDADE DO CPF
-    
+
     def cpf_disponivel(self, cpf: str):
 
         pessoa_existente = self.repository.buscar_por_cpf(cpf)
@@ -55,8 +55,6 @@ class PessoaService:
                 "cpf": pessoa.cpf,
                 "data_nascimento": pessoa.data_nascimento,
                 "sexo": pessoa.sexo,
-                "nome_mae": pessoa.nome_mae,
-                "nome_pai": pessoa.nome_pai,
                 "foto_id": foto_id
             }
             for pessoa, foto_id in resultados
@@ -108,12 +106,6 @@ class PessoaService:
 
         if dados.sexo is not None:
             pessoa.sexo = dados.sexo
-
-        if dados.nome_mae is not None:
-            pessoa.nome_mae = dados.nome_mae
-
-        if dados.nome_pai is not None:
-            pessoa.nome_pai = dados.nome_pai
 
         return self.repository.atualizar(pessoa)
 

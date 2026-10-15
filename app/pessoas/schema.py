@@ -16,37 +16,28 @@ class PessoaCreate(BaseModel):
         description="Nome completo da pessoa."
     )
 
-    cpf: str = Field(
-        ...,
+    cpf: Optional[str] = Field(
+        None,
         min_length=11,
         max_length=11,
-        description="CPF contendo exatamente 11 números."
+        description="CPF contendo exatamente 11 números, se disponível."
     )
 
-    data_nascimento: date
+    data_nascimento: Optional[date] = None
 
-    sexo: str = Field(
-        ...,
+    sexo: Optional[str] = Field(
+        None,
         min_length=1,
         max_length=1,
-        description="Sexo: M ou F."
-    )
-
-    nome_mae: str = Field(
-        ...,
-        min_length=3,
-        max_length=150
-    )
-
-    nome_pai: str = Field(
-        ...,
-        min_length=3,
-        max_length=150
+        description="Sexo: M ou F, se informado."
     )
 
     @field_validator("cpf")
     @classmethod
     def validar_cpf(cls, valor):
+        if valor is None:
+            return None
+
         if not valor.isdigit():
             raise ValueError(
                 "O CPF deve conter apenas números."
@@ -62,6 +53,9 @@ class PessoaCreate(BaseModel):
     @field_validator("sexo")
     @classmethod
     def validar_sexo(cls, valor):
+        if valor is None:
+            return None
+
         valor = valor.upper()
 
         if valor not in ("M", "F"):
@@ -71,9 +65,9 @@ class PessoaCreate(BaseModel):
 
         return valor
 
-    @field_validator("nome", "nome_mae", "nome_pai")
+    @field_validator("nome")
     @classmethod
-    def validar_nomes(cls, valor):
+    def validar_nome(cls, valor):
         valor = valor.strip()
 
         if not valor:
@@ -86,7 +80,7 @@ class PessoaCreate(BaseModel):
     @field_validator("data_nascimento")
     @classmethod
     def validar_data_nascimento(cls, valor):
-        if valor > date.today():
+        if valor is not None and valor > date.today():
             raise ValueError(
                 "A data de nascimento não pode ser futura."
             )
@@ -118,21 +112,12 @@ class PessoaUpdate(BaseModel):
         max_length=1
     )
 
-    nome_mae: Optional[str] = Field(
-        None,
-        min_length=3,
-        max_length=150
-    )
-
-    nome_pai: Optional[str] = Field(
-        None,
-        min_length=3,
-        max_length=150
-    )
-
     @field_validator("cpf")
     @classmethod
     def validar_cpf(cls, valor):
+        if valor is None:
+            return None
+
         if not valor.isdigit():
             raise ValueError(
                 "O CPF deve conter apenas números."
@@ -148,6 +133,9 @@ class PessoaUpdate(BaseModel):
     @field_validator("sexo")
     @classmethod
     def validar_sexo(cls, valor):
+        if valor is None:
+            return None
+
         valor = valor.upper()
 
         if valor not in ("M", "F"):
@@ -157,9 +145,12 @@ class PessoaUpdate(BaseModel):
 
         return valor
 
-    @field_validator("nome", "nome_mae", "nome_pai")
+    @field_validator("nome")
     @classmethod
-    def validar_nomes(cls, valor):
+    def validar_nome(cls, valor):
+        if valor is None:
+            return None
+
         valor = valor.strip()
 
         if not valor:
@@ -172,7 +163,7 @@ class PessoaUpdate(BaseModel):
     @field_validator("data_nascimento")
     @classmethod
     def validar_data_nascimento(cls, valor):
-        if valor > date.today():
+        if valor is not None and valor > date.today():
             raise ValueError(
                 "A data de nascimento não pode ser futura."
             )
@@ -185,18 +176,10 @@ class PessoaUpdate(BaseModel):
 class PessoaResponse(BaseModel):
 
     id: UUID
-
     nome: str
-
-    cpf: str
-
-    data_nascimento: date
-
-    sexo: str
-
-    nome_mae: str
-
-    nome_pai: str
+    cpf: Optional[str] = None
+    data_nascimento: Optional[date] = None
+    sexo: Optional[str] = None
 
     model_config = {
         "from_attributes": True
@@ -208,17 +191,12 @@ class PessoaResponse(BaseModel):
 class PessoaListaResponse(BaseModel):
 
     id: UUID
-
     nome: str
-
-    cpf: str
-
-    data_nascimento: date
-
-    sexo: str
-
-    nome_mae: str
-
-    nome_pai: str
-
+    cpf: Optional[str] = None
+    data_nascimento: Optional[date] = None
+    sexo: Optional[str] = None
     foto_id: Optional[UUID] = None
+
+    model_config = {
+        "from_attributes": True
+    }

@@ -6,7 +6,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.agentes.model import Agente
-from app.auth.dependencies import get_agente_atual
+from app.auth.dependencies import get_agente_atual, get_admin_atual
 from app.dependencies import get_db
 from app.desaparecimentos.model import RegistroDesaparecimento
 from app.desaparecimentos.repository import (
