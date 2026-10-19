@@ -55,6 +55,8 @@ def criar_localizacao(
             local_informado=dados.local_informado,
             data_hora=dados.data_hora,
             descricao=dados.descricao,
+            latitude=dados.latitude,
+            longitude=dados.longitude,
         )
     except ValueError as erro:
         raise HTTPException(

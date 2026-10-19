@@ -28,6 +28,8 @@ class LocalizacaoPessoaService:
         local_informado: str,
         data_hora: datetime,
         descricao: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
     ):
         registro = (
             self.desaparecimento_repository.buscar_por_id(
@@ -45,6 +47,8 @@ class LocalizacaoPessoaService:
             local_informado=local_informado,
             data_hora=data_hora,
             descricao=descricao,
+            latitude=latitude,
+            longitude=longitude,
         )
 
         return self.repository.salvar(localizacao)

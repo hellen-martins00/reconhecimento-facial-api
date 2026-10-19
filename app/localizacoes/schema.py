@@ -1,12 +1,19 @@
+
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    field_validator,
+)
 
 
 class LocalizacaoPessoaCreate(BaseModel):
     registro_desaparecimento_id: UUID
     local_informado: str
+    latitude: float | None = None
+    longitude: float | None = None
     data_hora: datetime
     descricao: str | None = None
 
@@ -22,6 +29,20 @@ class LocalizacaoPessoaCreate(BaseModel):
 
         return valor
 
+    @field_validator("latitude")
+    @classmethod
+    def validar_latitude(cls, valor: float | None):
+        if valor is not None and not -90 <= valor <= 90:
+            raise ValueError("Latitude inválida.")
+        return valor
+
+    @field_validator("longitude")
+    @classmethod
+    def validar_longitude(cls, valor: float | None):
+        if valor is not None and not -180 <= valor <= 180:
+            raise ValueError("Longitude inválida.")
+        return valor
+
     @field_validator("descricao")
     @classmethod
     def validar_descricao(cls, valor: str | None):
@@ -30,7 +51,7 @@ class LocalizacaoPessoaCreate(BaseModel):
 
         valor = valor.strip()
 
-        if valor and len(valor) > 2000:
+        if len(valor) > 2000:
             raise ValueError(
                 "A descrição deve ter no máximo 2000 caracteres."
             )
@@ -52,6 +73,8 @@ class LocalizacaoPessoaResponse(BaseModel):
     id: UUID
     registro_desaparecimento_id: UUID
     local_informado: str
+    latitude: float | None
+    longitude: float | None
     data_hora: datetime
     descricao: str | None
     created_at: datetime

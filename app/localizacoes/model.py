@@ -1,8 +1,9 @@
+
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,6 +32,17 @@ class LocalizacaoPessoa(Base):
     local_informado: Mapped[str] = mapped_column(
         String(200),
         nullable=False,
+    )
+
+    # Coordenadas geográficas selecionadas no mapa
+    latitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    longitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
     )
 
     data_hora: Mapped[datetime] = mapped_column(
