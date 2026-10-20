@@ -97,3 +97,22 @@ def listar_localizacoes_por_registro(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(erro),
         ) from erro
+
+@router.delete(
+    "/{localizacao_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def excluir_localizacao(
+    localizacao_id: UUID,
+    db: Session = Depends(get_db),
+    agente_atual: Agente = Depends(get_agente_atual),
+):
+    service = obter_service(db)
+
+    try:
+        service.excluir(localizacao_id)
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(erro),
+        ) from erro

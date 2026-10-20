@@ -48,3 +48,11 @@ class LocalizacaoPessoaRepository:
             .order_by(LocalizacaoPessoa.data_hora.desc())
             .all()
         )
+        
+    def excluir(self, localizacao: LocalizacaoPessoa):
+        try:
+            self.db.delete(localizacao)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise    

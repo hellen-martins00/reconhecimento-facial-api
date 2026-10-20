@@ -84,3 +84,11 @@ class LocalizacaoPessoaService:
         return self.repository.listar_por_registro(
             registro_desaparecimento_id
         )
+        
+    def excluir(self, id: UUID):
+        localizacao = self.repository.buscar_por_id(id)
+
+        if not localizacao:
+            raise ValueError("Localização não encontrada.")
+
+        self.repository.excluir(localizacao)
