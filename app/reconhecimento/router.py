@@ -37,6 +37,8 @@ def reconhecer_rosto(
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
 ):
+    
+    print(">>> ROTA DE RECONHECIMENTO ACESSADA", flush=True)
 
     extensao = Path(arquivo.filename).suffix.lower()
 
