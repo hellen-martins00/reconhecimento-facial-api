@@ -8,7 +8,7 @@ class PessoaReconhecimentoResponse(BaseModel):
 
     id: UUID
     nome: str
-    cpf: str
+    cpf: str | None = None
 
 
 class FotoReconhecimentoResponse(BaseModel):
