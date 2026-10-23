@@ -8,6 +8,12 @@ from fastapi import (
     HTTPException
 )
 
+
+import logging #remover depois
+
+logger = logging.getLogger(__name__) #remover depois
+
+
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_agente_atual
@@ -37,7 +43,6 @@ def reconhecer_rosto(
     db: Session = Depends(get_db),
     agente_atual: Agente = Depends(get_agente_atual)
 ):
-    
     print(">>> ROTA DE RECONHECIMENTO ACESSADA", flush=True)
 
     extensao = Path(arquivo.filename).suffix.lower()
@@ -49,7 +54,6 @@ def reconhecer_rosto(
     }
 
     if extensao not in extensoes_permitidas:
-
         raise HTTPException(
             status_code=400,
             detail=(
@@ -61,29 +65,28 @@ def reconhecer_rosto(
     conteudo = arquivo.file.read()
 
     if not conteudo:
-
         raise HTTPException(
             status_code=400,
             detail="O arquivo enviado está vazio."
         )
 
     try:
+        print("ETAPA 1: criando repository", flush=True)
 
         repository = EmbeddingRepository(db)
+        service = ReconhecimentoService(repository)
 
-        service = ReconhecimentoService(
-            repository
+        print("ETAPA 2: iniciando reconhecimento", flush=True)
+
+        resultado = service.reconhecer(conteudo)
+
+        print(
+            f"ETAPA 3: reconhecimento concluído: "
+            f"{resultado['reconhecido']}",
+            flush=True
         )
 
-        resultado = service.reconhecer(
-            conteudo
-        )
-
-        # SALVAR HISTÓRICO
-
-        reconhecimento_repository = (
-            ReconhecimentoRepository(db)
-        )
+        reconhecimento_repository = ReconhecimentoRepository(db)
 
         novo_reconhecimento = Reconhecimento(
             pessoa_id=(
@@ -96,17 +99,14 @@ def reconhecer_rosto(
             distancia=resultado["distancia"]
         )
 
-        reconhecimento_repository.criar(
-            novo_reconhecimento
-        )
+        print("ETAPA 4: salvando histórico", flush=True)
 
-        # PREPARAR RESPOSTA
+        reconhecimento_repository.criar(novo_reconhecimento)
 
         pessoa = resultado["pessoa"]
         foto = resultado["foto"]
 
         if pessoa:
-
             resultado["pessoa"] = {
                 "id": pessoa.id,
                 "nome": pessoa.nome,
@@ -114,21 +114,27 @@ def reconhecer_rosto(
             }
 
         if foto:
-
             resultado["foto"] = {
                 "id": foto.id,
                 "nome_arquivo": foto.nome_arquivo,
                 "data_upload": foto.data_upload
             }
 
+        print("ETAPA 5: retornando resposta", flush=True)
+
         return resultado
 
     except ValueError as erro:
-
         raise HTTPException(
             status_code=400,
             detail=str(erro)
         )
+
+    except Exception:
+        logger.exception(
+            "Erro interno na rota de reconhecimento"
+        )
+        raise
 
 
 @router.get("/total")
