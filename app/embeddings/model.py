@@ -34,7 +34,7 @@ class EmbeddingFacial(Base):
         nullable=False
     )
 
-    criado_em: Mapped[datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow
     )

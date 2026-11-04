@@ -1,11 +1,13 @@
 import numpy as np
 
+from contextlib import asynccontextmanager
+from deepface import DeepFace
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# MODELOS
 from app.pessoas.model import Pessoa
-from app.telefones.model import Telefone
-from app.enderecos.model import Endereco
 from app.fotos.model import Foto
 from app.embeddings.model import EmbeddingFacial
 from app.desaparecimentos.model import RegistroDesaparecimento
@@ -13,9 +15,8 @@ from app.localizacoes.model import LocalizacaoPessoa
 from app.agentes.model import Agente
 from app.agentes_faciais.model import AgenteFacial
 
+# ROTAS
 from app.pessoas.router import router as pessoa_router
-from app.telefones.router import router as telefone_router
-from app.enderecos.router import router as endereco_router
 from app.fotos.router import router as foto_router
 from app.reconhecimento.router import router as reconhecimento_router
 from app.desaparecimentos.router import router as desaparecimentos_router
@@ -24,29 +25,29 @@ from app.agentes.router import router as agente_router
 from app.auth.router import router as auth_router
 
 
-from contextlib import asynccontextmanager
-from deepface import DeepFace
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Pre-carregando modelos faciais...")
+
     try:
-        # Carrega o modelo de embeddings (Facenet)
         DeepFace.build_model("Facenet")
-        
-        # Cria uma imagem fictícia preta (100x100 pixels) para forçar o RetinaFace a carregar na memória no boot
+
         dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
+
         DeepFace.represent(
             img_path=dummy_img,
             model_name="Facenet",
             detector_backend="retinaface",
             enforce_detection=False
         )
+
         print("Modelos carregados com sucesso!")
+
     except Exception as e:
         print(f"Aviso no carregamento dos modelos: {e}")
+
     yield
+
 
 app = FastAPI(
     title="API de Reconhecimento Facial",
@@ -64,6 +65,7 @@ origins = [
     "http://localhost:3000",
 ]
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -73,9 +75,9 @@ app.add_middleware(
 )
 
 
+# REGISTRO DAS ROTAS
+
 app.include_router(pessoa_router)
-app.include_router(telefone_router)
-app.include_router(endereco_router)
 app.include_router(foto_router)
 app.include_router(reconhecimento_router)
 app.include_router(desaparecimentos_router)

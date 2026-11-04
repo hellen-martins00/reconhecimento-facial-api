@@ -69,6 +69,7 @@ def test_upload_foto_sucesso():
     vetor = [0.1, 0.2, 0.3]
 
     embedding_service.gerar_embedding.return_value = vetor
+    embedding_repository.buscar_mais_semelhante.return_value = None #simula que nao existe rosto duplicado
 
     arquivo = ArquivoFake(
         "foto.jpg",
@@ -210,6 +211,7 @@ def test_upload_salva_embedding_gerado():
     repository.salvar.return_value = foto
 
     embedding_service.gerar_embedding.return_value = vetor
+    embedding_repository.buscar_mais_semelhante.return_value = None
 
     arquivo = ArquivoFake(
         "foto.png",
@@ -363,6 +365,7 @@ def test_atualizar_foto_pessoa_sucesso():
     # Se o service buscar o embedding pelo repository,
     # simula o embedding existente.
     embedding_repository.buscar_por_foto_id.return_value = embedding
+    embedding_repository.buscar_mais_semelhante.return_value = None
 
     arquivo = ArquivoFake(
         "foto_nova.png",

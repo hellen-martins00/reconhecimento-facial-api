@@ -37,7 +37,7 @@ class ReconhecimentoRepository:
             self.db
             .query(Reconhecimento)
             .order_by(
-                Reconhecimento.criado_em.desc()
+                Reconhecimento.created_at.desc()
             )
             .limit(limite)
             .all()

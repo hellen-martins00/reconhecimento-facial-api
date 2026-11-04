@@ -11,7 +11,7 @@ class EmbeddingResponse(BaseModel):
 
     vetor: list[float]
 
-    criado_em: datetime
+    created_at: datetime
 
     model_config = {
         "from_attributes": True

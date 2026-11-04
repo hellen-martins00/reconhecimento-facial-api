@@ -10,7 +10,7 @@ class AgenteFacialResponse(BaseModel):
 
     agente_id: UUID
 
-    criado_em: datetime
+    created_at: datetime
 
     model_config = {
         "from_attributes": True

@@ -189,8 +189,6 @@ def test_agente_pode_criar_pessoa(client, db):
             "cpf": "12345678901",
             "data_nascimento": "1990-01-01",
             "sexo": "M",
-            "nome_mae": "Maria Teste",
-            "nome_pai": "Joao Teste"
         }
     )
 
@@ -242,8 +240,6 @@ def test_admin_pode_criar_pessoa(client, db):
             "cpf": "57953358000",
             "data_nascimento": "1990-05-10",
             "sexo": "M",
-            "nome_mae": "Maria Teste",
-            "nome_pai": "Joao Teste"
         }
     )
 

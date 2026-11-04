@@ -53,7 +53,7 @@ class Reconhecimento(Base):
         nullable=True
     )
 
-    criado_em: Mapped[datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
         nullable=False

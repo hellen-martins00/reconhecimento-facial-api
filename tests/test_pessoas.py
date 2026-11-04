@@ -49,17 +49,14 @@ def login(client, usuario, senha):
     assert response.status_code == 200
 
     return response.json()["access_token"]
-
+    
 
 def criar_dados_pessoa(cpf="36918458000"):
-
     return {
         "nome": "João da Silva",
         "cpf": cpf,
         "data_nascimento": "1990-01-01",
-        "sexo": "M",
-        "nome_mae": "Maria da Silva",
-        "nome_pai": "José da Silva"
+        "sexo": "M"
     }
 
 
@@ -121,7 +118,7 @@ def test_criar_pessoa_cpf_duplicado(client, db):
         json=pessoa
     )
 
-    assert segunda.status_code == 400
+    assert segunda.status_code == 409
 
     dados = segunda.json()
 
@@ -298,7 +295,7 @@ def test_admin_nao_pode_atualizar_pessoa_inexistente(client, db):
         }
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 404
 
     dados = response.json()
 

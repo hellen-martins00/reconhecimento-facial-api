@@ -9,9 +9,8 @@ from app.database import Base
 
 
 if TYPE_CHECKING:
-    from app.telefones.model import Telefone
-    from app.enderecos.model import Endereco
     from app.fotos.model import Foto
+    from app.desaparecimentos.model import RegistroDesaparecimento
 
 
 class Pessoa(Base):
@@ -65,23 +64,14 @@ class Pessoa(Base):
 
     # RELACIONAMENTOS
 
-    telefones: Mapped[list["Telefone"]] = relationship(
-        back_populates="pessoa",
-        cascade="all, delete-orphan"
-    )
-
-    enderecos: Mapped[list["Endereco"]] = relationship(
-        back_populates="pessoa",
-        cascade="all, delete-orphan"
-    )
-
     fotos: Mapped[list["Foto"]] = relationship(
         back_populates="pessoa",
         cascade="all, delete-orphan"
     )
 
-    registros_desaparecimento = relationship(
-        "RegistroDesaparecimento",
+    registros_desaparecimento: Mapped[
+        list["RegistroDesaparecimento"]
+    ] = relationship(
         back_populates="pessoa",
         cascade="all, delete-orphan"
     )

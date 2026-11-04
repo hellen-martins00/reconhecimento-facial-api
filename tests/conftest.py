@@ -9,13 +9,12 @@ from app.database import Base, engine, SessionLocal
 # Importa todos os modelos para o SQLAlchemy conhecer
 # todas as tabelas antes do create_all
 from app.pessoas.model import Pessoa
-from app.telefones.model import Telefone
-from app.enderecos.model import Endereco
 from app.fotos.model import Foto
 from app.embeddings.model import EmbeddingFacial
-from app.passagens.model import PassagemCriminal
 from app.agentes.model import Agente
 from app.agentes_faciais.model import AgenteFacial
+from app.desaparecimentos.model import RegistroDesaparecimento
+from app.localizacoes.model import LocalizacaoPessoa
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -27,7 +26,6 @@ def criar_tabelas_teste():
     Base.metadata.create_all(bind=engine)
 
     yield
-
 
 @pytest.fixture
 def client():
@@ -55,10 +53,9 @@ def db():
                     agentes,
                     embeddings_faciais,
                     fotos,
-                    telefones,
-                    enderecos,
-                    passagens_criminais,
-                    pessoas
+                    pessoas,
+                    registros_desaparecimento,
+                    localizacoes_pessoa
                 RESTART IDENTITY CASCADE
             """)
         )
