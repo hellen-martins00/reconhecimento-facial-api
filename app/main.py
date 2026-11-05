@@ -1,3 +1,8 @@
+# IMPORTANTE: psycopg precisa ser importado ANTES do tensorflow/deepface.
+# O libpq embutido no psycopg usa seu proprio OpenSSL; se o TensorFlow carregar
+# primeiro, a conexao SSL com o Postgres derruba o processo (segmentation fault).
+import psycopg  # noqa: F401
+
 import numpy as np
 
 from contextlib import asynccontextmanager
