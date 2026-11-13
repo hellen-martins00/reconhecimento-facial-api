@@ -20,7 +20,7 @@ class RegistroDesaparecimento(Base):
     )
 
     pessoa_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("pessoas.id"),
+        ForeignKey("pessoas.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

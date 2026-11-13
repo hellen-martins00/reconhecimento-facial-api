@@ -73,5 +73,6 @@ class Pessoa(Base):
         list["RegistroDesaparecimento"]
     ] = relationship(
         back_populates="pessoa",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
