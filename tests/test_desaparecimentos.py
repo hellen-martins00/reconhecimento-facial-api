@@ -1,271 +1,730 @@
-
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
+import importlib
 
 import pytest
 from pydantic import ValidationError
+from fastapi import HTTPException
 
+from app.desaparecimentos.model import RegistroDesaparecimento
+from app.desaparecimentos.repository import (
+    RegistroDesaparecimentoRepository,
+)
 from app.desaparecimentos.schema import (
     RegistroDesaparecimentoCreate,
     RegistroDesaparecimentoUpdate,
+    RegistroDesaparecimentoResponse,
 )
 from app.desaparecimentos.service import (
     RegistroDesaparecimentoService,
 )
 
-
-# --------------------------------------------------
-# TESTES DOS SCHEMAS
-# --------------------------------------------------
-
-def dados_validos():
-    return {
-        "pessoa_id": uuid4(),
-        "data_desaparecimento": date.today() - timedelta(days=1),
-        "local_desaparecimento": "Brasília - DF",
-        "descricao": "Desaparecimento registrado para teste.",
-        "status": "DESAPARECIDO",
-    }
+router = importlib.import_module("app.desaparecimentos.router")
 
 
-def test_schema_criar_registro_com_dados_validos():
-    dados = RegistroDesaparecimentoCreate(**dados_validos())
+# ==========================================================
+# FIXTURES
+# ==========================================================
 
+@pytest.fixture
+def db():
+    return MagicMock()
+
+
+@pytest.fixture
+def pessoa_id():
+    return uuid4()
+
+
+@pytest.fixture
+def registro_id():
+    return uuid4()
+
+
+@pytest.fixture
+def registro(pessoa_id, registro_id):
+    return RegistroDesaparecimento(
+        id=registro_id,
+        pessoa_id=pessoa_id,
+        data_desaparecimento=date(2025, 10, 10),
+        local_desaparecimento="Brasília - DF",
+        descricao="Desaparecimento para teste",
+        status="DESAPARECIDO",
+    )
+
+
+@pytest.fixture
+def repository(db):
+    return RegistroDesaparecimentoRepository(db)
+
+
+@pytest.fixture
+def dados_criacao(pessoa_id):
+    return RegistroDesaparecimentoCreate(
+        pessoa_id=pessoa_id,
+        data_desaparecimento=date(2025, 10, 10),
+        local_desaparecimento="Brasília - DF",
+        descricao="Desaparecimento para teste",
+    )
+
+
+# ==========================================================
+# TESTES DO REPOSITORY
+# ==========================================================
+
+def test_salvar_registro(repository, db, registro):
+    resultado = repository.salvar(registro)
+
+    db.add.assert_called_once_with(registro)
+    db.commit.assert_called_once()
+    db.refresh.assert_called_once_with(registro)
+
+    assert resultado is registro
+
+
+def test_salvar_faz_rollback_quando_ocorre_erro(
+    repository,
+    db,
+    registro,
+):
+    db.commit.side_effect = Exception("Erro no banco")
+
+    with pytest.raises(Exception, match="Erro no banco"):
+        repository.salvar(registro)
+
+    db.add.assert_called_once_with(registro)
+    db.rollback.assert_called_once()
+
+
+def test_buscar_por_id_encontrado(repository, db, registro):
+    db.query.return_value.filter.return_value.first.return_value = registro
+
+    resultado = repository.buscar_por_id(registro.id)
+
+    db.query.assert_called_once_with(RegistroDesaparecimento)
+    assert resultado is registro
+
+
+def test_buscar_por_id_nao_encontrado(repository, db):
+    db.query.return_value.filter.return_value.first.return_value = None
+
+    resultado = repository.buscar_por_id(uuid4())
+
+    assert resultado is None
+
+
+def test_listar_registros(repository, db, registro):
+    registros = [registro]
+    db.query.return_value.all.return_value = registros
+
+    resultado = repository.listar()
+
+    db.query.assert_called_once_with(RegistroDesaparecimento)
+    assert resultado == registros
+
+
+def test_listar_sem_registros(repository, db):
+    db.query.return_value.all.return_value = []
+
+    resultado = repository.listar()
+
+    assert resultado == []
+
+
+def test_listar_por_pessoa(repository, db, registro, pessoa_id):
+    registros = [registro]
+    db.query.return_value.filter.return_value.all.return_value = registros
+
+    resultado = repository.listar_por_pessoa(pessoa_id)
+
+    db.query.assert_called_once_with(RegistroDesaparecimento)
+    assert resultado == registros
+
+
+def test_listar_por_pessoa_sem_registros(repository, db, pessoa_id):
+    db.query.return_value.filter.return_value.all.return_value = []
+
+    resultado = repository.listar_por_pessoa(pessoa_id)
+
+    assert resultado == []
+
+
+def test_buscar_pessoa_por_id_encontrada(repository, db, pessoa_id):
+    pessoa = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = pessoa
+
+    resultado = repository.buscar_pessoa_por_id(pessoa_id)
+
+    assert resultado is pessoa
+
+
+def test_buscar_pessoa_por_id_nao_encontrada(repository, db, pessoa_id):
+    db.query.return_value.filter.return_value.first.return_value = None
+
+    resultado = repository.buscar_pessoa_por_id(pessoa_id)
+
+    assert resultado is None
+
+
+def test_atualizar_registro(repository, db, registro):
+    resultado = repository.atualizar(registro)
+
+    db.commit.assert_called_once()
+    db.refresh.assert_called_once_with(registro)
+
+    assert resultado is registro
+
+
+def test_atualizar_faz_rollback_quando_ocorre_erro(
+    repository,
+    db,
+    registro,
+):
+    db.commit.side_effect = Exception("Falha ao atualizar")
+
+    with pytest.raises(Exception, match="Falha ao atualizar"):
+        repository.atualizar(registro)
+
+    db.rollback.assert_called_once()
+
+
+def test_deletar_registro(repository, db, registro):
+    resultado = repository.deletar(registro)
+
+    db.delete.assert_called_once_with(registro)
+    db.commit.assert_called_once()
+
+    assert resultado is None
+
+
+def test_deletar_faz_rollback_quando_ocorre_erro(
+    repository,
+    db,
+    registro,
+):
+    db.commit.side_effect = Exception("Falha ao excluir")
+
+    with pytest.raises(Exception, match="Falha ao excluir"):
+        repository.deletar(registro)
+
+    db.delete.assert_called_once_with(registro)
+    db.rollback.assert_called_once()
+
+
+# ==========================================================
+# TESTES DO SCHEMA - CREATE
+# ==========================================================
+
+def test_create_com_dados_validos(pessoa_id):
+    dados = RegistroDesaparecimentoCreate(
+        pessoa_id=pessoa_id,
+        data_desaparecimento=date.today(),
+        local_desaparecimento="  Brasília - DF  ",
+        descricao="  Pessoa desaparecida  ",
+    )
+
+    assert dados.pessoa_id == pessoa_id
     assert dados.status == "DESAPARECIDO"
     assert dados.local_desaparecimento == "Brasília - DF"
+    assert dados.descricao == "Pessoa desaparecida"
 
 
-def test_schema_status_padrao_desaparecido():
-    dados = dados_validos()
-    dados.pop("status")
+def test_create_aceita_status_localizado(pessoa_id):
+    dados = RegistroDesaparecimentoCreate(
+        pessoa_id=pessoa_id,
+        data_desaparecimento=date.today(),
+        local_desaparecimento="Brasília - DF",
+        descricao="Pessoa localizada",
+        status="LOCALIZADO",
+    )
 
-    registro = RegistroDesaparecimentoCreate(**dados)
-
-    assert registro.status == "DESAPARECIDO"
+    assert dados.status == "LOCALIZADO"
 
 
-def test_schema_rejeita_data_futura():
-    dados = dados_validos()
-    dados["data_desaparecimento"] = date.today() + timedelta(days=1)
-
-    with pytest.raises(ValidationError):
-        RegistroDesaparecimentoCreate(**dados)
+def test_create_rejeita_data_futura(pessoa_id):
+    with pytest.raises(
+        ValidationError,
+        match="A data do desaparecimento não pode ser futura.",
+    ):
+        RegistroDesaparecimentoCreate(
+            pessoa_id=pessoa_id,
+            data_desaparecimento=date.today() + timedelta(days=1),
+            local_desaparecimento="Brasília - DF",
+            descricao="Pessoa desaparecida",
+        )
 
 
 @pytest.mark.parametrize(
     "local",
-    ["", "AB", "A" * 201],
+    [
+        "  ",
+        "AB",
+        "A" * 201,
+    ],
 )
-def test_schema_rejeita_local_invalido(local):
-    dados = dados_validos()
-    dados["local_desaparecimento"] = local
-
+def test_create_rejeita_local_com_tamanho_invalido(pessoa_id, local):
     with pytest.raises(ValidationError):
-        RegistroDesaparecimentoCreate(**dados)
+        RegistroDesaparecimentoCreate(
+            pessoa_id=pessoa_id,
+            data_desaparecimento=date.today(),
+            local_desaparecimento=local,
+            descricao="Pessoa desaparecida",
+        )
 
 
 @pytest.mark.parametrize(
     "descricao",
-    ["", "AB", "A" * 501],
+    [
+        "  ",
+        "AB",
+        "A" * 501,
+    ],
 )
-def test_schema_rejeita_descricao_invalida(descricao):
-    dados = dados_validos()
-    dados["descricao"] = descricao
-
+def test_create_rejeita_descricao_com_tamanho_invalido(
+    pessoa_id,
+    descricao,
+):
     with pytest.raises(ValidationError):
-        RegistroDesaparecimentoCreate(**dados)
-
-
-def test_schema_remove_espacos_do_local_e_descricao():
-    dados = dados_validos()
-    dados["local_desaparecimento"] = "  Brasília - DF  "
-    dados["descricao"] = "  Pessoa desaparecida para teste.  "
-
-    registro = RegistroDesaparecimentoCreate(**dados)
-
-    assert registro.local_desaparecimento == "Brasília - DF"
-    assert registro.descricao == "Pessoa desaparecida para teste."
-
-
-def test_schema_rejeita_status_invalido():
-    dados = dados_validos()
-    dados["status"] = "EM_ANALISE"
-
-    with pytest.raises(ValidationError):
-        RegistroDesaparecimentoCreate(**dados)
-
-
-def test_schema_update_rejeita_data_futura():
-    with pytest.raises(ValidationError):
-        RegistroDesaparecimentoUpdate(
-            data_desaparecimento=date.today() + timedelta(days=1)
-        )
-
-
-# --------------------------------------------------
-# TESTES DO SERVICE
-# --------------------------------------------------
-
-@pytest.fixture
-def repository():
-    return Mock()
-
-
-@pytest.fixture
-def service(repository):
-    return RegistroDesaparecimentoService(repository)
-
-
-def test_criar_registro_com_pessoa_existente(service, repository):
-    pessoa_id = uuid4()
-    repository.buscar_pessoa_por_id.return_value = SimpleNamespace(
-        id=pessoa_id
-    )
-    repository.salvar.side_effect = lambda registro: registro
-
-    registro = service.criar(
-        pessoa_id=pessoa_id,
-        data_desaparecimento=date.today(),
-        local_desaparecimento="Brasília - DF",
-        descricao="Registro de teste.",
-    )
-
-    assert registro.pessoa_id == pessoa_id
-    assert registro.status == "DESAPARECIDO"
-    repository.buscar_pessoa_por_id.assert_called_once_with(pessoa_id)
-    repository.salvar.assert_called_once()
-
-
-def test_criar_registro_com_pessoa_inexistente(service, repository):
-    pessoa_id = uuid4()
-    repository.buscar_pessoa_por_id.return_value = None
-
-    with pytest.raises(ValueError, match="Pessoa não encontrada"):
-        service.criar(
+        RegistroDesaparecimentoCreate(
             pessoa_id=pessoa_id,
             data_desaparecimento=date.today(),
             local_desaparecimento="Brasília - DF",
-            descricao="Registro de teste.",
+            descricao=descricao,
         )
 
-    repository.salvar.assert_not_called()
+
+def test_create_rejeita_status_invalido(pessoa_id):
+    with pytest.raises(ValidationError):
+        RegistroDesaparecimentoCreate(
+            pessoa_id=pessoa_id,
+            data_desaparecimento=date.today(),
+            local_desaparecimento="Brasília - DF",
+            descricao="Pessoa desaparecida",
+            status="EM_ANALISE",
+        )
 
 
-def test_listar_registros(service, repository):
-    registros = [SimpleNamespace(id=uuid4()), SimpleNamespace(id=uuid4())]
-    repository.listar.return_value = registros
+# ==========================================================
+# TESTES DO SCHEMA - UPDATE
+# ==========================================================
 
-    resultado = service.listar()
+def test_update_aceita_todos_os_campos():
+    dados = RegistroDesaparecimentoUpdate(
+        data_desaparecimento=date(2025, 10, 10),
+        local_desaparecimento="  Goiânia - GO  ",
+        descricao="  Nova descrição  ",
+        status="LOCALIZADO",
+    )
 
-    assert resultado == registros
-    repository.listar.assert_called_once()
-
-
-def test_buscar_registro_existente(service, repository):
-    registro_id = uuid4()
-    registro = SimpleNamespace(id=registro_id)
-    repository.buscar_por_id.return_value = registro
-
-    resultado = service.buscar_por_id(registro_id)
-
-    assert resultado == registro
-    repository.buscar_por_id.assert_called_once_with(registro_id)
+    assert dados.data_desaparecimento == date(2025, 10, 10)
+    assert dados.local_desaparecimento == "Goiânia - GO"
+    assert dados.descricao == "Nova descrição"
+    assert dados.status == "LOCALIZADO"
 
 
-def test_buscar_registro_inexistente(service, repository):
-    registro_id = uuid4()
-    repository.buscar_por_id.return_value = None
+def test_update_aceita_campos_nulos():
+    dados = RegistroDesaparecimentoUpdate(
+        data_desaparecimento=None,
+        local_desaparecimento=None,
+        descricao=None,
+        status=None,
+    )
 
+    assert dados.data_desaparecimento is None
+    assert dados.local_desaparecimento is None
+    assert dados.descricao is None
+    assert dados.status is None
+
+
+def test_update_rejeita_data_futura():
     with pytest.raises(
-        ValueError,
-        match="Registro de desaparecimento não encontrado",
+        ValidationError,
+        match="A data do desaparecimento não pode ser futura.",
     ):
-        service.buscar_por_id(registro_id)
+        RegistroDesaparecimentoUpdate(
+            data_desaparecimento=date.today() + timedelta(days=1),
+        )
 
 
-def test_listar_registros_por_pessoa(service, repository):
-    pessoa_id = uuid4()
-    registros = [SimpleNamespace(id=uuid4())]
+@pytest.mark.parametrize(
+    "local",
+    [
+        "",
+        "AB",
+        "A" * 201,
+    ],
+)
+def test_update_rejeita_local_invalido(local):
+    with pytest.raises(ValidationError):
+        RegistroDesaparecimentoUpdate(
+            local_desaparecimento=local,
+        )
 
-    repository.buscar_pessoa_por_id.return_value = SimpleNamespace(
-        id=pessoa_id
+
+def test_update_preserva_local_nulo():
+    dados = RegistroDesaparecimentoUpdate(
+        local_desaparecimento=None,
     )
-    repository.listar_por_pessoa.return_value = registros
 
-    resultado = service.listar_por_pessoa(pessoa_id)
-
-    assert resultado == registros
-    repository.listar_por_pessoa.assert_called_once_with(pessoa_id)
+    assert dados.local_desaparecimento is None
 
 
-def test_listar_registros_de_pessoa_inexistente(service, repository):
-    pessoa_id = uuid4()
-    repository.buscar_pessoa_por_id.return_value = None
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "",
+        "AB",
+        "A" * 501,
+    ],
+)
+def test_update_rejeita_descricao_invalida(descricao):
+    with pytest.raises(ValidationError):
+        RegistroDesaparecimentoUpdate(
+            descricao=descricao,
+        )
 
-    with pytest.raises(ValueError, match="Pessoa não encontrada"):
-        service.listar_por_pessoa(pessoa_id)
 
-    repository.listar_por_pessoa.assert_not_called()
+def test_update_preserva_descricao_nula():
+    dados = RegistroDesaparecimentoUpdate(
+        descricao=None,
+    )
+
+    assert dados.descricao is None
 
 
-def test_atualizar_registro_existente(service, repository):
-    registro_id = uuid4()
-    registro = SimpleNamespace(
+def test_update_rejeita_status_invalido():
+    with pytest.raises(ValidationError):
+        RegistroDesaparecimentoUpdate(
+            status="EM_ANALISE",
+        )
+
+
+# ==========================================================
+# TESTES DO SCHEMA - RESPONSE
+# ==========================================================
+
+def test_response_com_dados_validos(pessoa_id, registro_id):
+    agora = datetime.now()
+
+    resposta = RegistroDesaparecimentoResponse(
         id=registro_id,
+        pessoa_id=pessoa_id,
+        data_desaparecimento=date(2025, 10, 10),
+        local_desaparecimento="Brasília - DF",
+        descricao="Pessoa desaparecida",
         status="DESAPARECIDO",
-        descricao="Descrição antiga.",
+        created_at=agora,
+        updated_at=agora,
     )
 
-    repository.buscar_por_id.return_value = registro
-    repository.atualizar.side_effect = lambda item: item
+    assert resposta.id == registro_id
+    assert resposta.pessoa_id == pessoa_id
+    assert resposta.status == "DESAPARECIDO"
 
+
+def test_response_from_attributes(registro):
+    registro.created_at = datetime.now()
+    registro.updated_at = datetime.now()
+
+    resposta = RegistroDesaparecimentoResponse.model_validate(
+        registro,
+        from_attributes=True,
+    )
+
+    assert resposta.id == registro.id
+    assert resposta.pessoa_id == registro.pessoa_id
+    assert resposta.local_desaparecimento == registro.local_desaparecimento
+
+
+# ==========================================================
+# TESTES DO ROUTER
+# ==========================================================
+
+@pytest.fixture
+def service_mock():
+    return MagicMock()
+
+
+@pytest.fixture
+def agente_atual():
+    return SimpleNamespace(
+        id=uuid4(),
+        nome="Agente de teste",
+        usuario="agente.teste",
+        perfil="AGENTE",
+    )
+
+
+def test_obter_service(db):
+    with patch.object(
+        router,
+        "RegistroDesaparecimentoRepository",
+    ) as repository_mock, patch.object(
+        router,
+        "RegistroDesaparecimentoService",
+    ) as service_class_mock:
+
+        resultado = router.obter_service(db)
+
+        repository_mock.assert_called_once_with(db)
+        service_class_mock.assert_called_once_with(
+            repository_mock.return_value
+        )
+
+        assert resultado is service_class_mock.return_value
+
+
+def test_criar_registro_sucesso(
+    db,
+    agente_atual,
+    dados_criacao,
+    service_mock,
+):
+    esperado = MagicMock()
+    service_mock.criar.return_value = esperado
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.criar_registro(
+            dados_criacao,
+            db,
+            agente_atual,
+        )
+
+    service_mock.criar.assert_called_once_with(
+        pessoa_id=dados_criacao.pessoa_id,
+        data_desaparecimento=dados_criacao.data_desaparecimento,
+        local_desaparecimento=dados_criacao.local_desaparecimento,
+        descricao=dados_criacao.descricao,
+        status=dados_criacao.status,
+    )
+
+    assert resultado is esperado
+
+
+def test_criar_registro_pessoa_nao_encontrada(
+    db,
+    agente_atual,
+    dados_criacao,
+    service_mock,
+):
+    service_mock.criar.side_effect = ValueError("Pessoa não encontrada.")
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        with pytest.raises(HTTPException) as erro:
+            router.criar_registro(
+                dados_criacao,
+                db,
+                agente_atual,
+            )
+
+    assert erro.value.status_code == 404
+    assert erro.value.detail == "Pessoa não encontrada."
+
+
+def test_listar_registros(db, agente_atual, service_mock):
+    esperado = [MagicMock(), MagicMock()]
+    service_mock.listar.return_value = esperado
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.listar_registros(db, agente_atual)
+
+    service_mock.listar.assert_called_once()
+    assert resultado == esperado
+
+
+def test_obter_estatisticas(db, agente_atual):
+    estatisticas = SimpleNamespace(
+        casos_em_aberto=5,
+        pessoas_localizadas=3,
+    )
+    db.query.return_value.one.return_value = estatisticas
+
+    resultado = router.obter_estatisticas(db, agente_atual)
+
+    assert resultado == {
+        "casos_em_aberto": 5,
+        "pessoas_localizadas": 3,
+    }
+    db.query.assert_called_once()
+    db.query.return_value.one.assert_called_once()
+
+
+def test_listar_por_pessoa_sucesso(
+    db,
+    agente_atual,
+    pessoa_id,
+    service_mock,
+):
+    esperado = [MagicMock()]
+    service_mock.listar_por_pessoa.return_value = esperado
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.listar_por_pessoa(
+            pessoa_id,
+            db,
+            agente_atual,
+        )
+
+    service_mock.listar_por_pessoa.assert_called_once_with(pessoa_id)
+    assert resultado == esperado
+
+
+def test_listar_por_pessoa_nao_encontrada(
+    db,
+    agente_atual,
+    pessoa_id,
+    service_mock,
+):
+    service_mock.listar_por_pessoa.side_effect = ValueError(
+        "Pessoa não encontrada."
+    )
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        with pytest.raises(HTTPException) as erro:
+            router.listar_por_pessoa(
+                pessoa_id,
+                db,
+                agente_atual,
+            )
+
+    assert erro.value.status_code == 404
+    assert erro.value.detail == "Pessoa não encontrada."
+
+
+def test_buscar_registro_sucesso(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
+    esperado = MagicMock()
+    service_mock.buscar_por_id.return_value = esperado
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.buscar_registro(
+            registro_id,
+            db,
+            agente_atual,
+        )
+
+    service_mock.buscar_por_id.assert_called_once_with(registro_id)
+    assert resultado is esperado
+
+
+def test_buscar_registro_nao_encontrado(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
+    service_mock.buscar_por_id.side_effect = ValueError(
+        "Registro de desaparecimento não encontrado."
+    )
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        with pytest.raises(HTTPException) as erro:
+            router.buscar_registro(
+                registro_id,
+                db,
+                agente_atual,
+            )
+
+    assert erro.value.status_code == 404
+    assert erro.value.detail == (
+        "Registro de desaparecimento não encontrado."
+    )
+
+
+def test_atualizar_registro_sucesso(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
     dados = RegistroDesaparecimentoUpdate(
         status="LOCALIZADO",
-        descricao="Pessoa localizada.",
+    )
+    esperado = MagicMock()
+    service_mock.atualizar.return_value = esperado
+
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.atualizar_registro(
+            registro_id,
+            dados,
+            db,
+            agente_atual,
+        )
+
+    service_mock.atualizar.assert_called_once_with(
+        id=registro_id,
+        dados=dados,
+    )
+    assert resultado is esperado
+
+
+def test_atualizar_registro_nao_encontrado(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
+    dados = RegistroDesaparecimentoUpdate(
+        status="LOCALIZADO",
+    )
+    service_mock.atualizar.side_effect = ValueError(
+        "Registro de desaparecimento não encontrado."
     )
 
-    resultado = service.atualizar(registro_id, dados)
+    with patch.object(router, "obter_service", return_value=service_mock):
+        with pytest.raises(HTTPException) as erro:
+            router.atualizar_registro(
+                registro_id,
+                dados,
+                db,
+                agente_atual,
+            )
 
-    assert resultado.status == "LOCALIZADO"
-    assert resultado.descricao == "Pessoa localizada."
-    repository.atualizar.assert_called_once_with(registro)
-
-
-def test_atualizar_registro_inexistente(service, repository):
-    registro_id = uuid4()
-    repository.buscar_por_id.return_value = None
-
-    dados = RegistroDesaparecimentoUpdate(status="LOCALIZADO")
-
-    with pytest.raises(
-        ValueError,
-        match="Registro de desaparecimento não encontrado",
-    ):
-        service.atualizar(registro_id, dados)
-
-    repository.atualizar.assert_not_called()
+    assert erro.value.status_code == 404
 
 
-def test_deletar_registro_existente(service, repository):
-    registro_id = uuid4()
-    registro = SimpleNamespace(id=registro_id)
-    repository.buscar_por_id.return_value = registro
+def test_deletar_registro_sucesso(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
+    with patch.object(router, "obter_service", return_value=service_mock):
+        resultado = router.deletar_registro(
+            registro_id,
+            db,
+            agente_atual,
+        )
 
-    service.deletar(registro_id)
+    service_mock.deletar.assert_called_once_with(registro_id)
+    assert resultado is None
 
-    repository.deletar.assert_called_once_with(registro)
 
+def test_deletar_registro_nao_encontrado(
+    db,
+    agente_atual,
+    registro_id,
+    service_mock,
+):
+    service_mock.deletar.side_effect = ValueError(
+        "Registro de desaparecimento não encontrado."
+    )
 
-def test_deletar_registro_inexistente(service, repository):
-    registro_id = uuid4()
-    repository.buscar_por_id.return_value = None
+    with patch.object(router, "obter_service", return_value=service_mock):
+        with pytest.raises(HTTPException) as erro:
+            router.deletar_registro(
+                registro_id,
+                db,
+                agente_atual,
+            )
 
-    with pytest.raises(
-        ValueError,
-        match="Registro de desaparecimento não encontrado",
-    ):
-        service.deletar(registro_id)
-
-    repository.deletar.assert_not_called()
+    assert erro.value.status_code == 404
+    assert erro.value.detail == (
+        "Registro de desaparecimento não encontrado."
+    )

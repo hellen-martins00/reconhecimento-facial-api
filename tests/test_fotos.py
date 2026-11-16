@@ -442,3 +442,273 @@ def test_deletar_foto_inexistente():
     assert str(erro.value) == "Foto não encontrada."
 
     repository.deletar.assert_not_called()
+    
+def test_verificar_foto_duplicada_sem_resultado():
+
+    service, _, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = None
+
+    service._verificar_foto_duplicada(
+        vetor=[0.1, 0.2, 0.3],
+        pessoa_id_atual=uuid4()
+    )
+
+    embedding_repository.buscar_mais_semelhante.assert_called_once()
+    
+def test_verificar_foto_duplicada_sem_resultado():
+
+    service, _, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = None
+
+    service._verificar_foto_duplicada(
+        vetor=[0.1, 0.2, 0.3],
+        pessoa_id_atual=uuid4()
+    )
+
+    embedding_repository.buscar_mais_semelhante.assert_called_once()
+    
+def test_verificar_foto_duplicada_pertencente_a_outra_pessoa():
+
+    pessoa_atual_id = uuid4()
+    pessoa_existente_id = uuid4()
+    foto_id = uuid4()
+
+    embedding = SimpleNamespace(
+        foto_id=foto_id
+    )
+
+    foto_existente = SimpleNamespace(
+        id=foto_id,
+        pessoa_id=pessoa_existente_id
+    )
+
+    service, repository, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = (
+        embedding,
+        0.3
+    )
+
+    repository.buscar_por_id.return_value = foto_existente
+
+    with pytest.raises(ValueError) as erro:
+
+        service._verificar_foto_duplicada(
+            vetor=[0.1, 0.2, 0.3],
+            pessoa_id_atual=pessoa_atual_id
+        )
+
+    assert str(erro.value) == (
+        "Esta foto facial já está cadastrada "
+        "para outra pessoa."
+    )
+
+    repository.buscar_por_id.assert_called_once_with(foto_id)
+    
+def test_verificar_foto_duplicada_pertencente_a_mesma_pessoa():
+
+    pessoa_id = uuid4()
+    foto_id = uuid4()
+
+    embedding = SimpleNamespace(
+        foto_id=foto_id
+    )
+
+    foto_existente = SimpleNamespace(
+        id=foto_id,
+        pessoa_id=pessoa_id
+    )
+
+    service, repository, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = (
+        embedding,
+        0.3
+    )
+
+    repository.buscar_por_id.return_value = foto_existente
+
+    service._verificar_foto_duplicada(
+        vetor=[0.1, 0.2, 0.3],
+        pessoa_id_atual=pessoa_id
+    )
+
+    repository.buscar_por_id.assert_called_once_with(foto_id)
+    
+def test_verificar_foto_duplicada_sem_foto_existente():
+
+    embedding = SimpleNamespace(
+        foto_id=uuid4()
+    )
+
+    service, repository, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = (
+        embedding,
+        0.3
+    )
+
+    repository.buscar_por_id.return_value = None
+
+    service._verificar_foto_duplicada(
+        vetor=[0.1, 0.2, 0.3],
+        pessoa_id_atual=uuid4()
+    )
+
+    repository.buscar_por_id.assert_called_once_with(
+        embedding.foto_id
+    )
+    
+def test_verificar_foto_duplicada_distancia_acima_limite():
+
+    embedding = SimpleNamespace(
+        foto_id=uuid4()
+    )
+
+    service, repository, _, embedding_repository = criar_service()
+
+    embedding_repository.buscar_mais_semelhante.return_value = (
+        embedding,
+        0.6
+    )
+
+    service._verificar_foto_duplicada(
+        vetor=[0.1, 0.2, 0.3],
+        pessoa_id_atual=uuid4()
+    )
+
+    repository.buscar_por_id.assert_not_called()
+    
+def test_verificar_foto_agente_duplicada():
+
+    agente_facial = SimpleNamespace(
+        agente_id=uuid4()
+    )
+
+    service, _, _, _ = criar_service()
+
+    service.agente_facial_repository = Mock()
+
+    service.agente_facial_repository.buscar_mais_semelhante.return_value = (
+        agente_facial,
+        0.3
+    )
+
+    with pytest.raises(ValueError) as erro:
+
+        service._verificar_foto_agente_duplicada(
+            vetor=[0.1, 0.2, 0.3]
+        )
+
+    assert str(erro.value) == (
+        "Esta foto facial já está cadastrada "
+        "para outro agente."
+    )
+    
+def test_verificar_foto_agente_sem_duplicidade():
+
+    service, _, _, _ = criar_service()
+
+    service.agente_facial_repository = Mock()
+
+    service.agente_facial_repository.buscar_mais_semelhante.return_value = None
+
+    service._verificar_foto_agente_duplicada(
+        vetor=[0.1, 0.2, 0.3]
+    )
+
+    service.agente_facial_repository.buscar_mais_semelhante.assert_called_once_with(
+        [0.1, 0.2, 0.3],
+        agente_id_excluir=None
+    )
+    
+def test_verificar_foto_agente_distancia_acima_limite():
+
+    agente_facial = SimpleNamespace(
+        agente_id=uuid4()
+    )
+
+    service, _, _, _ = criar_service()
+
+    service.agente_facial_repository = Mock()
+
+    service.agente_facial_repository.buscar_mais_semelhante.return_value = (
+        agente_facial,
+        0.7
+    )
+
+    service._verificar_foto_agente_duplicada(
+        vetor=[0.1, 0.2, 0.3]
+    )
+
+    service.agente_facial_repository.buscar_mais_semelhante.assert_called_once()
+    
+def test_criar_para_agente_agente_nao_encontrado():
+    service, repository, _, _ = criar_service()
+
+    repository.db.query.return_value.filter.return_value.first.return_value = None
+
+    arquivo = ArquivoFake("foto.jpg", b"conteudo da imagem")
+
+    with pytest.raises(ValueError, match="Agente não encontrado."):
+        service.criar_para_agente(
+            agente_id=uuid4(),
+            arquivo=arquivo
+        )
+        
+def test_criar_para_agente_cadastro_facial_existente():
+    service, repository, embedding_service, _ = criar_service()
+
+    agente_id = uuid4()
+
+    repository.db.query.return_value.filter.return_value.first.return_value = (
+        SimpleNamespace(id=agente_id)
+    )
+
+    service.agente_facial_repository = Mock()
+    service.agente_facial_repository.buscar_por_agente_id.return_value = (
+        SimpleNamespace(agente_id=agente_id)
+    )
+
+    arquivo = ArquivoFake("foto.jpg", b"conteudo da imagem")
+
+    with pytest.raises(
+        ValueError,
+        match="Este agente já possui um cadastro facial."
+    ):
+        service.criar_para_agente(
+            agente_id=agente_id,
+            arquivo=arquivo
+        )
+
+    embedding_service.gerar_embedding.assert_not_called()
+    
+def test_criar_para_agente_cadastro_facial_existente():
+    service, repository, embedding_service, _ = criar_service()
+
+    agente_id = uuid4()
+
+    repository.db.query.return_value.filter.return_value.first.return_value = (
+        SimpleNamespace(id=agente_id)
+    )
+
+    service.agente_facial_repository = Mock()
+    service.agente_facial_repository.buscar_por_agente_id.return_value = (
+        SimpleNamespace(agente_id=agente_id)
+    )
+
+    arquivo = ArquivoFake("foto.jpg", b"conteudo da imagem")
+
+    with pytest.raises(
+        ValueError,
+        match="Este agente já possui um cadastro facial."
+    ):
+        service.criar_para_agente(
+            agente_id=agente_id,
+            arquivo=arquivo
+        )
+
+    embedding_service.gerar_embedding.assert_not_called()
+    

@@ -1,17 +1,26 @@
 from dotenv import load_dotenv
 import os
 
-# Carrega as variáveis do arquivo .env
-load_dotenv()
+# Identifica se a execução é de testes
+AMBIENTE_TESTE = os.getenv("APP_ENV") == "test"
+
+# Carrega o arquivo de ambiente correspondente
+if AMBIENTE_TESTE:
+    load_dotenv(".env.test", override=True)
+else:
+    load_dotenv(".env", override=True)
 
 # Configurações do banco
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Usa o driver psycopg 3 (psycopg2-binary causava segfault ao conectar)
+# Utiliza Psycopg 3
 if DATABASE_URL:
     for prefixo in ("postgres://", "postgresql://"):
         if DATABASE_URL.startswith(prefixo):
-            DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len(prefixo):]
+            DATABASE_URL = (
+                "postgresql+psycopg://"
+                + DATABASE_URL[len(prefixo):]
+            )
             break
 
 # Configurações de autenticação
